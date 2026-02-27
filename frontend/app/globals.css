@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --surface: #f8fafc;
+  --surface-alt: #ffffff;
+  --line: #e2e8f0;
+  --primary: #005ea6;
+  --primary-dark: #003a66;
+  --accent: #0ea5e9;
+  --muted: #64748b;
+  --radius: 16px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    var(--font-body),
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: #bae6fd;
+  color: #082443;
+}
+
+/* ── Scrollbar ── */
+.telebot-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.telebot-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: #cbd5e1;
+}
+.telebot-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.telebot-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Animations ── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out both;
+}
+.animate-dot-1 {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.animate-dot-2 {
+  animation: pulse-dot 1.2s ease-in-out 0.15s infinite;
+}
+.animate-dot-3 {
+  animation: pulse-dot 1.2s ease-in-out 0.3s infinite;
+}

@@ -1,0 +1,64 @@
+services:
+  # ── Backend: Django API ──
+  - type: web
+    name: telebot-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --worker-class gevent --workers 2 --timeout 180 --access-logfile - --error-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "0"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "0"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set this to your frontend URL after deploy
+      - key: OPENAI_API_KEY
+        sync: false  # Set your OpenAI API key here
+      - key: OPENAI_MODEL
+        value: "gpt-4o-mini"
+      - key: OPENAI_EMBED_MODEL
+        value: "text-embedding-3-small"
+      - key: MONGO_URI
+        sync: false  # Set your MongoDB Atlas connection string here
+      - key: MONGO_DB_NAME
+        value: "telesur_chatbot"
+      - key: CHROMA_PERSIST_DIR
+        value: "/opt/render/project/src/chroma_data"
+      - key: CHROMA_COLLECTION
+        value: "telesur_docs"
+      - key: RAG_TOP_K
+        value: "3"
+      - key: RAG_DATA_DIR
+        value: "/opt/render/project/src/data"
+    disk:
+      name: chroma-data
+      mountPath: /opt/render/project/src/chroma_data
+      sizeGB: 1
+
+  # ── Frontend: Next.js ──
+  - type: web
+    name: telebot-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: node .next/standalone/server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false  # Set this to your backend URL (e.g., https://telebot-backend.onrender.com)
+      - key: NEXT_PUBLIC_SHOW_TEST_FEEDBACK_PANEL
+        value: "0"
+      - key: PORT
+        value: "3000"
