@@ -20,6 +20,7 @@ class ApiTelemetryMiddleware:
         path = request.path or ""
         if path.startswith("/api/") and path not in {
             "/api/chat",
+            "/api/chat/stream",
             "/api/telemetry",
             "/api/dashboard",
         }:

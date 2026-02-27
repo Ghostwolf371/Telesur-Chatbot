@@ -19,33 +19,60 @@ from apps.conversations.services.summary_service import SummaryService
 from apps.telemetry.services.telemetry_service import TelemetryService
 
 
+def _parse_chat_request(request):
+    """Validate request and build the shared services used by both chat views."""
+    serializer = ChatRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    session_id = serializer.validated_data.get("session_id") or str(uuid.uuid4())
+    user_id = serializer.validated_data.get("user_id")
+    user_message = serializer.validated_data["message"]
+
+    history_service = HistoryService()
+    summary_service = SummaryService()
+    guardrail = GuardrailService()
+    rag_service = RagService()
+    llm_service = LLMService()
+    telemetry = TelemetryService(repository=history_service.repository)
+
+    try:
+        memory_fetch_limit = max(10, int(os.getenv("TELEBOT_MEMORY_FETCH_LIMIT", "40")))
+    except ValueError:
+        memory_fetch_limit = 40
+
+    return {
+        "session_id": session_id,
+        "user_id": user_id,
+        "user_message": user_message,
+        "history_service": history_service,
+        "summary_service": summary_service,
+        "guardrail": guardrail,
+        "rag_service": rag_service,
+        "llm_service": llm_service,
+        "telemetry": telemetry,
+        "memory_fetch_limit": memory_fetch_limit,
+    }
+
+
 class ChatView(APIView):
     throttle_scope = "chat"
 
     def post(self, request) -> Response:
-        serializer = ChatRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        session_id = serializer.validated_data.get("session_id") or str(uuid.uuid4())
-        user_id = serializer.validated_data.get("user_id")
-        user_message = serializer.validated_data["message"]
-
-        history_service = HistoryService()
-        summary_service = SummaryService()
-        guardrail = GuardrailService()
-        rag_service = RagService()
-        llm_service = LLMService()
-        telemetry = TelemetryService(repository=history_service.repository)
+        ctx = _parse_chat_request(request)
+        session_id = ctx["session_id"]
+        user_id = ctx["user_id"]
+        user_message = ctx["user_message"]
+        history_service = ctx["history_service"]
+        summary_service = ctx["summary_service"]
+        guardrail = ctx["guardrail"]
+        rag_service = ctx["rag_service"]
+        llm_service = ctx["llm_service"]
+        telemetry = ctx["telemetry"]
+        memory_fetch_limit = ctx["memory_fetch_limit"]
 
         started = time.perf_counter()
         status_text = "ok"
         error_message = ""
-        try:
-            memory_fetch_limit = max(
-                10, int(os.getenv("TELEBOT_MEMORY_FETCH_LIMIT", "40"))
-            )
-        except ValueError:
-            memory_fetch_limit = 40
 
         try:
             history_service.ensure_session(session_id=session_id, user_id=user_id)
@@ -161,26 +188,17 @@ class ChatStreamView(APIView):
     throttle_scope = "chat"
 
     def post(self, request):
-        serializer = ChatRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        session_id = serializer.validated_data.get("session_id") or str(uuid.uuid4())
-        user_id = serializer.validated_data.get("user_id")
-        user_message = serializer.validated_data["message"]
-
-        history_service = HistoryService()
-        summary_service = SummaryService()
-        guardrail = GuardrailService()
-        rag_service = RagService()
-        llm_service = LLMService()
-        telemetry = TelemetryService(repository=history_service.repository)
-
-        try:
-            memory_fetch_limit = max(
-                10, int(os.getenv("TELEBOT_MEMORY_FETCH_LIMIT", "40"))
-            )
-        except ValueError:
-            memory_fetch_limit = 40
+        ctx = _parse_chat_request(request)
+        session_id = ctx["session_id"]
+        user_id = ctx["user_id"]
+        user_message = ctx["user_message"]
+        history_service = ctx["history_service"]
+        summary_service = ctx["summary_service"]
+        guardrail = ctx["guardrail"]
+        rag_service = ctx["rag_service"]
+        llm_service = ctx["llm_service"]
+        telemetry = ctx["telemetry"]
+        memory_fetch_limit = ctx["memory_fetch_limit"]
 
         # Pre-work: session, history, guardrail, RAG
         try:

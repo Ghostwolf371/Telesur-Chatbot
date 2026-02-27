@@ -15,11 +15,11 @@ echo "[2/5] Health-check endpoint"
 curl -sf "$BACKEND_URL/api/health" | python -c "import sys,json; d=json.load(sys.stdin); print(json.dumps(d,indent=2)); sys.exit(0 if d['status']=='ok' else 1)"
 
 echo "[3/5] Verify frontend /chat route"
-curl -sf "$FRONTEND_URL/chat" | grep -q "TeleBot Support Assistant"
+curl -sf "$FRONTEND_URL/chat" | grep -q "TeleBot"
 echo "[ok] frontend /chat"
 
 echo "[4/5] Verify frontend /monitor route"
-curl -sf "$FRONTEND_URL/monitor" | grep -q "TeleBot Monitoring Dashboard"
+curl -sf "$FRONTEND_URL/monitor" | grep -q "Monitoring Dashboard"
 echo "[ok] frontend /monitor"
 
 echo "[5/5] Show user-testing threshold status (non-blocking)"

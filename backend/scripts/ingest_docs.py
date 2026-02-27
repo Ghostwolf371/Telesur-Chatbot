@@ -46,7 +46,11 @@ def source_id_for(path: Path, data_dir: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest documents into ChromaDB.")
-    parser.add_argument("--data-dir", default=str(ROOT_DIR.parent / "data"), help="Path to source documents")
+    parser.add_argument(
+        "--data-dir",
+        default=str(ROOT_DIR.parent / "data"),
+        help="Path to source documents",
+    )
     parser.add_argument(
         "--reset", action="store_true", help="Delete existing collection before ingest"
     )
@@ -136,7 +140,7 @@ def main() -> None:
 
     print(
         f"\nIngestion complete: {len(docs)} documents, {total_chunks} chunks "
-        f"into collection '{collection_name}' ({chroma_host}:{chroma_port})."
+        f"into collection '{collection_name}' ({chroma_persist_dir})."
     )
 
 
