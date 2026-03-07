@@ -345,21 +345,21 @@ export function ChatWindow() {
   return (
     <div className="flex flex-1 flex-col gap-3 overflow-hidden">
       {/* Chat card */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-telesur-blue/10 bg-white shadow-sm">
         {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+        <div className="flex items-center justify-between bg-telesur-blue px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-sm font-semibold text-slate-700">
+            <span className="h-2 w-2 rounded-full bg-telesur-yellow" />
+            <span className="text-sm font-semibold text-white">
               TeleBot
             </span>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+            <span className="rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white/70">
               {shortSession}
             </span>
           </div>
           <button
             onClick={startNewConversation}
-            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+            className="rounded-lg bg-telesur-yellow px-3 py-1.5 text-xs font-semibold text-telesur-blue transition hover:bg-telesur-yellow-light"
             type="button"
           >
             + New Chat
@@ -368,8 +368,8 @@ export function ChatWindow() {
 
         {/* Prompt chips */}
         {messages.length <= 1 && (
-          <div className="animate-fade-in border-b border-slate-100 px-4 py-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="animate-fade-in border-b border-telesur-blue/10 px-4 py-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-telesur-blue/40">
               Quick prompts
             </p>
             <div className="flex flex-wrap gap-2">
@@ -381,7 +381,7 @@ export function ChatWindow() {
                     if (chip.scenario) setFeedbackScenario(chip.scenario);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                  className="rounded-lg border border-telesur-blue/15 bg-telesur-blue/[0.03] px-3 py-1.5 text-xs font-medium text-telesur-blue/70 transition hover:border-telesur-blue/30 hover:bg-telesur-blue/[0.08] hover:text-telesur-blue"
                   type="button"
                 >
                   {chip.label}
@@ -406,9 +406,9 @@ export function ChatWindow() {
           ))}
           {isLoading && (
             <div className="animate-fade-in flex items-center gap-1.5 py-2 pl-1">
-              <span className="animate-dot-1 h-2 w-2 rounded-full bg-sky-500" />
-              <span className="animate-dot-2 h-2 w-2 rounded-full bg-sky-500" />
-              <span className="animate-dot-3 h-2 w-2 rounded-full bg-sky-500" />
+              <span className="animate-dot-1 h-2 w-2 rounded-full bg-telesur-blue" />
+              <span className="animate-dot-2 h-2 w-2 rounded-full bg-telesur-blue" />
+              <span className="animate-dot-3 h-2 w-2 rounded-full bg-telesur-blue" />
             </div>
           )}
         </div>
@@ -416,19 +416,19 @@ export function ChatWindow() {
         {/* Input bar */}
         <form
           onSubmit={onSubmit}
-          className="flex items-center gap-2 border-t border-slate-100 bg-white px-4 py-3"
+          className="flex items-center gap-2 border-t border-telesur-blue/10 bg-white px-4 py-3"
         >
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about Telesur services…"
-            className="h-10 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            className="h-10 flex-1 rounded-xl border border-telesur-blue/15 bg-slate-50 px-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-telesur-blue/40 focus:ring-2 focus:ring-telesur-blue/10"
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex h-10 items-center rounded-xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50 active:scale-[0.97]"
+            className="inline-flex h-10 items-center rounded-xl bg-telesur-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-telesur-blue-light disabled:opacity-50 active:scale-[0.97]"
           >
             Send
           </button>
@@ -481,14 +481,14 @@ export function ChatWindow() {
                   value={testerId}
                   onChange={(e) => setTesterId(e.target.value)}
                   placeholder="Tester ID"
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-telesur-blue/40"
                 />
                 <select
                   value={feedbackScenario}
                   onChange={(e) =>
                     setFeedbackScenario(e.target.value as FeedbackScenario)
                   }
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-telesur-blue/40"
                 >
                   <option value="mobile">Mobile</option>
                   <option value="fiber">Fiber</option>
@@ -500,7 +500,7 @@ export function ChatWindow() {
                 <select
                   value={String(feedbackRating)}
                   onChange={(e) => setFeedbackRating(Number(e.target.value))}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-telesur-blue/40"
                 >
                   {[5, 4, 3, 2, 1].map((n) => (
                     <option key={n} value={n}>
@@ -511,7 +511,7 @@ export function ChatWindow() {
                 <select
                   value={feedbackSuccess ? "yes" : "no"}
                   onChange={(e) => setFeedbackSuccess(e.target.value === "yes")}
-                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400"
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-telesur-blue/40"
                 >
                   <option value="yes">Success: Yes</option>
                   <option value="no">Success: No</option>
@@ -522,7 +522,7 @@ export function ChatWindow() {
                 value={feedbackNotes}
                 onChange={(e) => setFeedbackNotes(e.target.value)}
                 placeholder="Notes about what worked or failed…"
-                className="min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400"
+                className="min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-telesur-blue/40"
               />
 
               <div className="flex items-center justify-between">
@@ -530,7 +530,7 @@ export function ChatWindow() {
                 <button
                   type="submit"
                   disabled={isSubmittingFeedback}
-                  className="rounded-lg bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
+                  className="rounded-lg bg-telesur-blue px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-telesur-blue-light disabled:opacity-50"
                 >
                   {isSubmittingFeedback ? "Saving…" : "Save Feedback"}
                 </button>

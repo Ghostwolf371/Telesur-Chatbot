@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
+import { FloatingChatWidget } from "@/components/chat/FloatingChatWidget";
 
 import "./globals.css";
 
@@ -31,27 +33,32 @@ export default function RootLayout({
       <body
         className={`${bodyFont.variable} ${displayFont.variable} antialiased`}
       >
-        {/* ── Top nav bar ── */}
-        <nav className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-lg sm:px-6">
+        {/* ── Navbar ── */}
+        <nav className="sticky top-0 z-40 flex h-14 items-center justify-between bg-telesur-blue px-5">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-sm font-bold text-white shadow-sm">
-              T
-            </span>
-            <span className="font-display text-[15px] font-semibold text-slate-800">
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-telesur-yellow">
+              <Image
+                src="/telesur-logo.png"
+                alt="Telesur logo"
+                width={64}
+                height={64}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <span className="font-display text-sm font-semibold text-white">
               TeleBot
             </span>
           </Link>
-
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-5">
             <Link
               href="/chat"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              className="text-sm font-medium text-white/80 transition hover:text-white"
             >
               Chat
             </Link>
             <Link
               href="/monitor"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              className="text-sm font-medium text-white/80 transition hover:text-white"
             >
               Monitor
             </Link>
@@ -59,6 +66,7 @@ export default function RootLayout({
         </nav>
 
         {children}
+        <FloatingChatWidget />
       </body>
     </html>
   );

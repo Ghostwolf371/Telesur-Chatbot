@@ -18,14 +18,14 @@ body {
     system-ui,
     -apple-system,
     sans-serif;
-  background: #f1f5f9;
+  background: #f0f0f5;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #bae6fd;
-  color: #082443;
+  background: #FFD200;
+  color: #1B0A91;
 }
 
 /* ── Scrollbar ── */
@@ -34,10 +34,10 @@ body {
 }
 .telebot-scroll::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background: #cbd5e1;
+  background: #b8b3d6;
 }
 .telebot-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #1B0A91;
 }
 .telebot-scroll::-webkit-scrollbar-track {
   background: transparent;
@@ -91,4 +91,17 @@ body {
 }
 .animate-dot-3 {
   animation: pulse-dot 1.2s ease-in-out 0.3s infinite;
+}
+
+/* Floating chat button subtle bounce */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
 }
