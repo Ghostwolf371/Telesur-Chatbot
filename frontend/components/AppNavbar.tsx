@@ -22,6 +22,7 @@ export function AppNavbar() {
             width={64}
             height={64}
             className="h-full w-full object-cover"
+            priority
           />
         </div>
         <span className="font-display text-sm font-semibold text-white">

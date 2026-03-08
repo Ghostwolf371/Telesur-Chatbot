@@ -26,6 +26,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Enable static optimization and caching
+export const dynamic = 'force-static';
+export const revalidate = 31536000; // Cache for 1 year
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

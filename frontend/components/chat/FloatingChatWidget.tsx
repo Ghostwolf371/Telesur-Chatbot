@@ -224,6 +224,7 @@ export function FloatingChatWidget() {
                 width={48}
                 height={48}
                 className="h-full w-full object-cover"
+                priority
               />
             </div>
             <div>
@@ -388,6 +389,7 @@ export function FloatingChatWidget() {
             width={48}
             height={48}
             className="h-8 w-8 object-cover"
+            priority
           />
         )}
       </button>
