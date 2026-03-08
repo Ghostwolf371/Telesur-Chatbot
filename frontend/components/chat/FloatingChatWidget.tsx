@@ -40,6 +40,7 @@ export function FloatingChatWidget() {
   );
 
   const [isOpen, setIsOpen] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(true);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -204,12 +205,14 @@ export function FloatingChatWidget() {
     <>
       {/* ── Chat popup window ── */}
       <div
-        className={`fixed bottom-20 left-5 z-50 flex flex-col overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-300 ease-in-out ${
+        className={`fixed z-50 flex flex-col overflow-hidden bg-white shadow-2xl transition-all duration-300 ease-in-out ${
           isOpen
             ? "pointer-events-auto scale-100 opacity-100"
             : "pointer-events-none scale-95 opacity-0"
-        }`}
-        style={{ width: "min(380px, calc(100vw - 40px))", height: "min(560px, calc(100vh - 120px))" }}
+        } 
+        bottom-0 left-0 right-0 rounded-t-3xl
+        sm:bottom-20 sm:left-auto sm:right-4 sm:rounded-3xl sm:w-[380px] sm:h-[560px] sm:max-h-[calc(100vh-120px)]
+        h-[calc(100vh-80px)]`}
       >
         {/* Header — dark blue with logo, like second image */}
         <div className="flex items-center justify-between bg-telesur-blue px-4 py-3">
@@ -332,10 +335,41 @@ export function FloatingChatWidget() {
         </form>
       </div>
 
+      {/* ── Tooltip notification ── */}
+      {!isOpen && showTooltip && (
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-20 z-50 animate-slide-up">
+          <div className="glass-card relative max-w-[240px] rounded-2xl border-2 border-blue-200 bg-white p-3 shadow-2xl">
+            <button
+              onClick={() => setShowTooltip(false)}
+              className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+            <div className="flex items-start gap-2 pr-4">
+              <span className="text-lg">💬</span>
+              <div>
+                <p className="text-xs font-bold text-slate-800">
+                  TeleBot
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-600">
+                  Heb je vragen? Chat met mij!
+                </p>
+              </div>
+            </div>
+            {/* Arrow pointing to button - hidden on mobile */}
+            <div className="absolute -right-2 bottom-3 h-4 w-4 rotate-45 border-b-2 border-r-2 border-blue-200 bg-white hidden sm:block"></div>
+            {/* Arrow pointing down on mobile */}
+            <div className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b-2 border-r-2 border-blue-200 bg-white sm:hidden"></div>
+          </div>
+        </div>
+      )}
+
       {/* ── Floating action button ── */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`fixed bottom-6 left-5 z-50 flex h-12 w-12 items-center justify-center overflow-hidden shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 ${
+        onMouseEnter={() => setShowTooltip(true)}
+        className={`fixed bottom-4 sm:bottom-6 right-4 sm:right-5 z-50 flex h-14 w-14 sm:h-12 sm:w-12 items-center justify-center overflow-hidden shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 ${
           isOpen
             ? "bg-telesur-blue rounded-2xl"
             : "bg-telesur-yellow animate-bounce-subtle rounded-[18px]"

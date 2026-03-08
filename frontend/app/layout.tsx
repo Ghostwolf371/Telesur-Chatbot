@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Sora } from "next/font/google";
 import { FloatingChatWidget } from "@/components/chat/FloatingChatWidget";
 import { AppNavbar } from "@/components/AppNavbar";
@@ -20,6 +20,13 @@ const displayFont = Sora({
 export const metadata: Metadata = {
   title: "TeleBot | Telesur Support",
   description: "Production-ready AI support assistant for Telesur services.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
