@@ -20,6 +20,10 @@ const displayFont = Sora({
 export const metadata: Metadata = {
   title: "TeleBot | Telesur Support",
   description: "Production-ready AI support assistant for Telesur services.",
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 export const viewport: Viewport = {

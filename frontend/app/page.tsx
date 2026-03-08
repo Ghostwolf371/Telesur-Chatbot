@@ -428,35 +428,86 @@ export default function HomePage() {
                 />
               </a>
             </div>
-            <button className="mt-6 rounded-full border border-white/70 px-6 py-2 text-sm">BTW-certificaat</button>
+            <a 
+              href="https://www.telesur.sr/wp-content/uploads/2024/11/BTW_Certificaat___TELECOMMUNICATIEBEDRIJF_SURINAME.pdf" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-block rounded-full border border-white/70 px-6 py-2 text-sm hover:bg-white/10 transition-colors"
+            >
+              BTW-certificaat
+            </a>
           </div>
           <div>
             <p className="text-lg font-semibold">Thuis</p>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Internet</li>
-              <li>Vast Bellen</li>
+              <li>
+                <a href="https://www.telesur.sr/internet/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Internet
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/huis-vast-bellen/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Vast Bellen
+                </a>
+              </li>
             </ul>
             <p className="mt-6 text-lg font-semibold">Telesur</p>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Over ons</li>
-              <li>Werken bij Telesur</li>
-              <li>CSR</li>
+              <li>
+                <a href="https://www.telesur.sr/het-bedrijf/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Over ons
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/werken-bij-telesur/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Werken bij Telesur
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/corporate-social-responsibility/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  CSR
+                </a>
+              </li>
             </ul>
           </div>
           <div>
             <p className="text-lg font-semibold">Mobiel</p>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Prepaid</li>
-              <li>Postpaid</li>
-              <li>Roaming</li>
+              <li>
+                <a href="https://www.telesur.sr/prepaid/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Prepaid
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/postpaid/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Postpaid
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/roaming-bellen-smsen-en-internetten/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Roaming
+                </a>
+              </li>
             </ul>
           </div>
           <div>
             <p className="text-lg font-semibold">e-Shop</p>
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Telefoons</li>
-              <li>SIM-kaarten</li>
-              <li>Rekening betalen</li>
+              <li>
+                <a href="https://www.telesur.sr/winkel/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Telefoons
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/sim-kaarten/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  SIM-kaarten
+                </a>
+              </li>
+              <li>
+                <a href="https://www.telesur.sr/rekening-betalen/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Rekening betalen
+                </a>
+              </li>
             </ul>
           </div>
         </div>
