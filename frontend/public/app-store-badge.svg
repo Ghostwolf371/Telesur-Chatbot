@@ -1,0 +1,7 @@
+<svg width="170" height="50" viewBox="0 0 170 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="170" height="50" rx="8" fill="#000000"/>
+  <circle cx="18" cy="20" r="7" fill="#FFFFFF"/>
+  <rect x="14" y="26" width="8" height="9" rx="4" fill="#FFFFFF"/>
+  <text x="34" y="18" fill="#FFFFFF" font-size="8" font-family="Arial, sans-serif" font-weight="600">GET IT ON</text>
+  <text x="34" y="35" fill="#FFFFFF" font-size="20" font-family="Arial, sans-serif" font-weight="700">App Store</text>
+</svg>
