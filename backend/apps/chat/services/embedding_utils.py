@@ -12,17 +12,17 @@ _TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 DEFAULT_EMBEDDING_DIM = 1536  # OpenAI text-embedding-3-small dimension
 
 # OpenAI embedding configuration
-_OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 _OPENAI_EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
 _openai_client: OpenAI | None = None
 
 
 def _get_openai_client() -> OpenAI | None:
     global _openai_client
-    if not _OPENAI_API_KEY:
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
         return None
     if _openai_client is None:
-        _openai_client = OpenAI(api_key=_OPENAI_API_KEY)
+        _openai_client = OpenAI(api_key=api_key)
     return _openai_client
 
 

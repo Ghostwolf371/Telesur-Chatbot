@@ -41,10 +41,10 @@ export function ChatbotPopup() {
           </button>
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-800 shadow-lg">
-              <Image 
-                src="/logo.png" 
-                alt="Telesur" 
-                width={40} 
+              <Image
+                src="/telesur-logo.png"
+                alt="Telesur"
+                width={40}
                 height={40}
                 className="object-contain"
               />
@@ -71,13 +71,13 @@ export function ChatbotPopup() {
       >
         {/* Pulse animation ring */}
         <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-75"></span>
-        
+
         {/* Button content */}
         <div className="relative z-10 flex h-full w-full items-center justify-center">
-          <Image 
-            src="/logo.png" 
-            alt="Chat with Telesur" 
-            width={40} 
+          <Image
+            src="/telesur-logo.png"
+            alt="Chat with Telesur"
+            width={40}
             height={40}
             className="object-contain transition-transform group-hover:scale-110"
           />
