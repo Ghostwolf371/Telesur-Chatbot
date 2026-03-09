@@ -103,10 +103,14 @@ class LLMService:
     FEW_SHOT_EXAMPLES = (
         "Example 1:\n"
         "User: Wat kost 100/100 internet?\n"
-        "TeleBot: Het Basic pakket (100/100 Mbps) kost SRD 1.099,29/maand (excl. BTW). Wil je upgraden?\n\n"
+        "TeleBot: Het **Basic pakket** (100/100 Mbps) kost **SRD 1.099,29/maand** (excl. BTW). Wil je upgraden?\n\n"
         "Example 2:\n"
-        "User: ja\n"
-        "TeleBot: Het Streaming pakket (200/200) kost SRD 1.868,78/maand. Aanvragen via MyTelesur of 152.\n"
+        "User: Welke mobiele pakketten zijn er?\n"
+        "TeleBot: Telesur biedt deze postpaid bundels:\n"
+        "- **Basic** — 35 GB voor **SRD 760,77**/maand\n"
+        "- **55 GB** — voor **SRD 936,94**/maand\n"
+        "- **170 GB** — voor **SRD 1.405,41**/maand\n\n"
+        "Aanvragen via MyTelesur of bel 152.\n"
     )
 
     def build_retrieval_query(
@@ -181,10 +185,11 @@ class LLMService:
             "Rules: 1) Give specific data (prices, speeds, codes) from context. "
             "2) Read the conversation turns to resolve references ('dat', 'dit', 'what did I ask'). "
             "3) Reply in the user's language (Dutch/English). "
-            "4) Be concise: 1-3 sentences max. "
+            "4) Be concise but clear. "
             "5) Never repeat a previous answer; on 'ja'/'yes' give NEW info. "
             "6) For unresolvable issues: Telesur support 152 / WhatsApp +597 8885888. "
-            "7) Do not use markdown formatting (no *, **, #, etc.). Output plain text only.\n\n"
+            "7) Use markdown to format your answers for readability: use **bold** for plan names and prices, "
+            "use bullet lists (- item) when listing multiple options, and use headings (###) sparingly for sections.\n\n"
             f"{self.FEW_SHOT_EXAMPLES}\n"
             f"Memory: {summary_text}\n\n"
             f"Conversation:\n{recent_text}\n\n"
@@ -205,7 +210,9 @@ class LLMService:
         if not self.client:
             return "OpenAI API key is not configured. Please contact the administrator."
 
-        messages = self._build_openai_messages(user_message, context, summary, recent_messages)
+        messages = self._build_openai_messages(
+            user_message, context, summary, recent_messages
+        )
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -234,11 +241,15 @@ class LLMService:
     ) -> Generator[str, None, str]:
         """Yield tokens as they arrive from OpenAI. Returns the full text."""
         if not self.client:
-            fallback = "OpenAI API key is not configured. Please contact the administrator."
+            fallback = (
+                "OpenAI API key is not configured. Please contact the administrator."
+            )
             yield fallback
             return fallback
 
-        messages = self._build_openai_messages(user_message, context, summary, recent_messages)
+        messages = self._build_openai_messages(
+            user_message, context, summary, recent_messages
+        )
         full_text = ""
         try:
             stream = self.client.chat.completions.create(
