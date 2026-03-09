@@ -30,8 +30,8 @@ body {
 }
 
 ::selection {
-  background: #FFD200;
-  color: #1B0A91;
+  background: #ffd200;
+  color: #1b0a91;
 }
 
 /* ── Scrollbar ── */
@@ -43,7 +43,7 @@ body {
   background: #b8b3d6;
 }
 .telebot-scroll::-webkit-scrollbar-thumb:hover {
-  background: #1B0A91;
+  background: #1b0a91;
 }
 .telebot-scroll::-webkit-scrollbar-track {
   background: transparent;
@@ -101,7 +101,8 @@ body {
 
 /* Floating chat button subtle bounce */
 @keyframes bounce-subtle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -110,4 +111,32 @@ body {
 }
 .animate-bounce-subtle {
   animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Chat popup slide-up from bottom-right corner */
+@keyframes chat-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes chat-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+.animate-chat-open {
+  animation: chat-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-chat-close {
+  animation: chat-slide-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
 }

@@ -11,15 +11,6 @@ type TelemetrySummary = {
   avg_total_tokens_est: number;
 };
 
-type FeedbackSummary = {
-  total_feedback: number;
-  unique_testers: number;
-  success_feedback: number;
-  success_rate: number;
-  avg_rating: number;
-  by_scenario: Array<{ scenario: string; count: number }>;
-};
-
 type ConversationSummary = {
   total_messages: number;
   total_user_messages: number;
@@ -28,26 +19,7 @@ type ConversationSummary = {
 
 type DashboardPayload = {
   telemetry: TelemetrySummary;
-  feedback: FeedbackSummary;
   conversations: ConversationSummary;
-  validation: {
-    required: {
-      testers: number;
-      conversations: number;
-      feedback_entries: number;
-    };
-    current: {
-      testers: number;
-      conversations: number;
-      feedback_entries: number;
-    };
-    remaining: {
-      testers: number;
-      conversations: number;
-      feedback_entries: number;
-    };
-    ready: boolean;
-  };
 };
 
 type TelemetryItem = {
@@ -139,7 +111,7 @@ export default function MonitorPage() {
             Monitoring Dashboard
           </h1>
           <p className="mt-0.5 text-sm text-slate-500">
-            Live telemetry, feedback, and validation metrics.
+            Live telemetry and performance metrics.
           </p>
         </div>
         <button
@@ -165,49 +137,8 @@ export default function MonitorPage() {
 
       {d && (
         <>
-          {/* Rubric readiness banner */}
-          <div
-            className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 ${
-              d.validation.ready
-                ? "border-emerald-200 bg-emerald-50"
-                : "border-amber-200 bg-amber-50"
-            }`}
-          >
-            <div>
-              <p
-                className={`text-sm font-semibold ${d.validation.ready ? "text-emerald-700" : "text-amber-700"}`}
-              >
-                {d.validation.ready
-                  ? "✓ Rubric thresholds met"
-                  : "⚠ Rubric thresholds incomplete"}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-600">
-                Testers {d.validation.current.testers}/
-                {d.validation.required.testers} · Conversations{" "}
-                {d.validation.current.conversations}/
-                {d.validation.required.conversations} · Feedback{" "}
-                {d.validation.current.feedback_entries}/
-                {d.validation.required.feedback_entries}
-              </p>
-            </div>
-            {!d.validation.ready && (
-              <p className="text-xs text-amber-600">
-                Need:{" "}
-                {d.validation.remaining.testers > 0
-                  ? `+${d.validation.remaining.testers} testers `
-                  : ""}
-                {d.validation.remaining.conversations > 0
-                  ? `+${d.validation.remaining.conversations} conversations `
-                  : ""}
-                {d.validation.remaining.feedback_entries > 0
-                  ? `+${d.validation.remaining.feedback_entries} feedback`
-                  : ""}
-              </p>
-            )}
-          </div>
-
           {/* Stat grid */}
-          <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Total Requests"
               value={String(d.telemetry.total_requests)}
@@ -234,61 +165,12 @@ export default function MonitorPage() {
               value={String(Math.round(d.telemetry.avg_total_tokens_est))}
               sub="estimated per request"
             />
-          </div>
-
-          <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Conversations"
               value={String(d.conversations.sessions_with_user_messages)}
               sub={`${d.conversations.total_user_messages} user messages`}
             />
-            <StatCard
-              label="Feedback Entries"
-              value={String(d.feedback.total_feedback)}
-              sub={`${d.feedback.unique_testers} unique testers`}
-            />
-            <StatCard
-              label="Success Rate"
-              value={`${(d.feedback.success_rate * 100).toFixed(1)}%`}
-              accent={
-                d.feedback.success_rate >= 0.8
-                  ? "green"
-                  : d.feedback.success_rate >= 0.5
-                    ? "amber"
-                    : "red"
-              }
-            />
-            <StatCard
-              label="Avg Rating"
-              value={`${d.feedback.avg_rating.toFixed(1)} / 5`}
-              accent={
-                d.feedback.avg_rating >= 4
-                  ? "green"
-                  : d.feedback.avg_rating >= 3
-                    ? "amber"
-                    : "red"
-              }
-            />
           </div>
-
-          {/* Scenario breakdown */}
-          {d.feedback.by_scenario.length > 0 && (
-            <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 text-sm font-semibold text-slate-700">
-                Feedback by Scenario
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {d.feedback.by_scenario.map((s) => (
-                  <span
-                    key={s.scenario}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600"
-                  >
-                    {s.scenario}: {s.count}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Telemetry log table */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
