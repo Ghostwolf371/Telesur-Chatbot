@@ -2,38 +2,43 @@
 
 ## 1. System Overview
 
-TeleBot is a containerized conversational support service for Telesur service questions (Mobile, Fiber, Entertainment).
+TeleBot is a production conversational support service for Telesur service questions (Mobile, Fiber, Entertainment), deployed on Render.
 
-- Frontend: Next.js App Router + Tailwind + Shadcn-style UI components.
-- Backend: Django 4.2 + DRF orchestration API.
-- Primary persistence: MongoDB (session, message history, summary, telemetry) through `pymongo` repository layer.
-- Vector store: ChromaDB for knowledge chunks and semantic retrieval.
-- LLM: Ollama local runtime with `llama3.2:3b`.
+- Frontend: Next.js App Router + Tailwind + Shadcn-style UI components, hosted on Render.
+- Backend: Django 4.2 + DRF orchestration API, hosted on Render.
+- Primary persistence: MongoDB Atlas (session, message history, summary, telemetry) through `pymongo` repository layer.
+- Vector store: ChromaDB (persistent disk on Render) for knowledge chunks and semantic retrieval.
+- LLM: OpenAI API `gpt-4o-mini` for generation, `text-embedding-3-small` for embeddings.
 
 ## 2. Runtime Topology
 
+### Production (Render)
+
 ```mermaid
 flowchart LR
-    User([User]) -->|HTTP :3000| FE["Frontend\nNext.js"]
-    FE -->|POST /api/chat/stream| BE["Backend\nDjango + DRF\nGunicorn gevent"]
+    User([User]) -->|HTTPS| FE["Frontend\nNext.js\nRender Web Service"]
+    FE -->|POST /api/chat| BE["Backend\nDjango + DRF\nGunicorn gevent\nRender Web Service"]
     BE -->|guardrail check| GR{"Guardrail\nregex filter"}
     GR -->|blocked| BE
     GR -->|safe| RAG["RAG Service"]
-    RAG -->|query embeddings| CB[("ChromaDB\n:8001")]
-    BE -->|generate / stream| OL["Ollama\nllama3.2:3b\n:11434"]
-    BE -->|read/write sessions,\nmessages, telemetry| MG[("MongoDB\n:27017")]
+    RAG -->|query embeddings| CB[("ChromaDB\nPersistent Disk")]
+    BE -->|generate| OAI["OpenAI API\ngpt-4o-mini"]
+    BE -->|read/write sessions,\nmessages, telemetry| MG[("MongoDB Atlas")]
     BE -->|background| SUM["Summary\nService"]
-    SUM -->|summarize call| OL
+    SUM -->|summarize call| OAI
     SUM -->|save summary| MG
 ```
 
-Docker Compose services:
+Production services (Render):
 
-1. `frontend` (port 3000)
-2. `backend` (port 8000)
-3. `mongodb` (port 27017)
-4. `chromadb` (port 8001 -> 8000 internal)
-5. `ollama` (port 11434)
+1. `telebot-frontend` — Next.js static + SSR (Render Web Service, free tier)
+2. `telebot-backend` — Django + Gunicorn (Render Web Service, free tier, 1 GB persistent disk for ChromaDB)
+3. MongoDB Atlas — managed cloud database (free tier)
+4. OpenAI API — LLM generation and embeddings (external)
+
+### Local Development
+
+For local development, the backend can run with `python manage.py runserver` and the frontend with `npm run dev`. MongoDB can be local or Atlas. See `README.md` for setup instructions.
 
 ## 3. Request Flow
 
@@ -65,16 +70,19 @@ Request protection:
 
 - RAG over pure prompt-only chat: improves answer grounding and source attribution.
 - Hybrid Mongo approach (`djongo` capability + active `pymongo` repository path): keeps Django compatibility while using performant direct operations for hot paths.
-- Local Ollama runtime: avoids external API dependency and supports offline/local deployment.
+- OpenAI API (`gpt-4o-mini`): provides high-quality generation and consistent embeddings via `text-embedding-3-small` at low cost. The small model keeps per-token costs minimal while outperforming local alternatives.
+- Render hosting: zero-ops deployment with free tier, persistent disk for ChromaDB, and automatic TLS.
 
 ## 6. Scalability and Risks
 
-- Current implementation is single-instance dev-oriented; horizontal scaling would require shared ingress and stateless app replica coordination.
+- Current deployment is single-instance on Render free tier; horizontal scaling would require paid plans and stateless app replica coordination.
 - Potential bottlenecks:
-  - LLM inference latency on local hardware
+  - OpenAI API latency and rate limits
   - Chroma query latency for larger corpora
-  - Mongo Atlas network latency (if remote URI is used)
+  - MongoDB Atlas network latency
+  - Render free tier cold starts (~30s after inactivity)
 - Mitigations:
   - Caching frequently asked responses
-  - Background ingestion and scheduled reindexing
-  - Introduce request queue and rate limiting in production
+  - Background ingestion and scheduled reindexing via `build.sh`
+  - DRF rate limiting active on chat and summarize endpoints
+  - Persistent disk prevents re-ingestion on every deploy

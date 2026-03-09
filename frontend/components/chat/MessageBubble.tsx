@@ -24,7 +24,7 @@ export function MessageBubble({
         new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
-        })
+        }),
       );
     }
   }, [timestamp]);
@@ -83,13 +83,6 @@ export function MessageBubble({
         >
           <p className="whitespace-pre-wrap break-words">{content}</p>
         </div>
-
-        {/* Source Attribution (Outside the blue text bubble for Telebot) */}
-        {!isUser && sources.length > 0 && (
-          <div className="mt-2 w-full max-w-full">
-            <SourceAttribution sources={sources} />
-          </div>
-        )}
 
         {/* Sender Name and Time Below the Bubble */}
         <div className="mt-2 px-1">

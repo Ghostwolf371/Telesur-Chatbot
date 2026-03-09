@@ -20,7 +20,7 @@ Prompt engineering is the **core quality lever** in TeleBot:
 - **Safety enforcement**: guardrail patterns + deterministic refusal messages prevent misuse.
 - **Memory continuity**: a summarization prompt maintains long-session context without token explosion.
 
-Without well-designed prompts, the small local model (llama3.2:3b) would produce vague, off-topic, or unsafe responses.
+Without well-designed prompts, the model would produce vague, off-topic, or unsafe responses. Prompt iteration was initially performed on a local Ollama `llama3.2:3b` model; production now runs on OpenAI `gpt-4o-mini`, which benefits from the same prompt structure while delivering higher quality and faster responses.
 
 ---
 
@@ -41,9 +41,10 @@ Without well-designed prompts, the small local model (llama3.2:3b) would produce
 
 ### Model
 
-- **Runtime**: Ollama local, model `llama3.2:3b`.
-- **Strength**: runs locally, no API costs, offline-capable.
-- **Constraint**: small 3B parameter model can over-generalize when prompts are vague — making prompt structure critical.
+- **Development**: Ollama local, model `llama3.2:3b` — used for prompt iteration and testing.
+- **Production**: OpenAI API, model `gpt-4o-mini` — higher quality, faster responses, consistent embeddings via `text-embedding-3-small`.
+- **Strength of dev model**: runs locally, no API costs, offline-capable. Forces rigorous prompt design since small models are less forgiving.
+- **Constraint**: the 3B development model can over-generalize when prompts are vague — making prompt structure critical. These constraints carry over as best practices for production.
 
 ### Output
 
@@ -139,7 +140,7 @@ The model temperature is set to 0.3 (top_p=0.9) for more factual, consistent res
 - **Rule 5 added "never repeat"**: addresses a regression where the model echoed its previous answer on follow-up "ja" responses.
 - **`num_predict: 150`** caps generation length, preventing runaway responses.
 - **`num_ctx: 2048`** reduces context window from 4096, cutting memory and compute.
-- **`keep_alive: 30m`** prevents Ollama from unloading the model between requests, eliminating cold-start latency.
+- **`keep_alive: 30m`** (Ollama-specific, dev only) prevents the model from unloading between requests, eliminating cold-start latency.
 - **Prompt ends with `TeleBot:`** so the model starts generating immediately without preamble.
 - **Result**: response latency dropped from ~8-10s to ~3-5s on CPU-only Docker setup.
 
@@ -149,7 +150,7 @@ Original design rationale (carried from Iteration 3):
 - Numbered rules are easily parsed by small models and reduce vague behavior.
 - Explicit language-matching rule prevents random language switching.
 - Structured sections (memory → recent → context → question) give the model a clear reading order.
-- Low temperature (0.3) reduces hallucination and chatty filler from the 3B model.
+- Low temperature (0.3) reduces hallucination and chatty filler (especially important for the 3B dev model; also beneficial in production with `gpt-4o-mini`).
 
 ---
 
@@ -411,7 +412,7 @@ Summarize the conversation. Include:
 - Main prompt reliably returns domain-focused support answers grounded in retrieved context.
 - Summary prompt maintains session continuity across 10+ turn conversations.
 - Safety patterns block known injection/extraction attempts with zero false negatives on test set.
-- Few-shot examples guide tone and format consistency for the small 3B model.
+- Few-shot examples guide tone and format consistency (critical for the 3B dev model; still valuable for consistent production output).
 
 ### Efficiency
 
@@ -432,7 +433,7 @@ Summarize the conversation. Include:
 
 - **Risk**: Weak or outdated source documents reduce answer precision → mitigation: scheduled RAG refresh from live Telesur website.
 - **Risk**: Regex-only guardrails may miss adversarial paraphrases → mitigation backlog: add classifier-based moderation and adversarial test suite.
-- **Risk**: Small model may hallucinate pricing → mitigation: rule 2 constrains to retrieved context only; few-shot example shows referral pattern.
+- **Risk**: Model may hallucinate pricing → mitigation: rule 2 constrains to retrieved context only; few-shot example shows referral pattern.
 - **Risk**: Language detection failure → mitigation: rule 6 explicitly instructs language matching; few-shot covers both Dutch and English.
 
 ---
@@ -440,7 +441,7 @@ Summarize the conversation. Include:
 ## 6. Reflection and Limitations
 
 - Prompt quality is tightly coupled to document quality and retrieval relevance. Better source docs directly improve answers.
-- The small local model benefits heavily from explicit instruction structure and few-shot examples — investment in prompt design has outsized returns compared to larger models.
+- Designing prompts against the small local model (3B) forced rigorous structure that also benefits the production `gpt-4o-mini` model. The investment in prompt design pays off across model sizes.
 - Current safety layer is pattern-based. Production deployment should add a classification-based moderation step.
 - Few-shot examples currently cover three archetypes. Expanding to include edge cases (partial information, multilingual switching, escalation to human agent) would further improve robustness.
 - Summarization quality degrades slightly in very long sessions (50+ turns). A hierarchical summarization approach could address this.

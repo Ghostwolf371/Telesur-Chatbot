@@ -15,8 +15,8 @@ Demonstrate with real users that TeleBot provides practical support value for Mo
 
 ### Test setup
 
-- Entry point: `http://localhost:3000/chat`
-- Monitoring view: `http://localhost:3000/monitor`
+- Entry point: production deployment URL (Render)
+- Monitoring view: production `/monitor` page
 - Test window: `[DATE_START] – [DATE_END]`
 - Version under test: `[COMMIT_OR_TAG]`
 - Use **New Conversation** for each tester scenario so each run counts as a separate conversation.

@@ -72,11 +72,11 @@ Abuse protection signals:
 
 ```json
 {
-  "status": "healthy",
-  "checks": {
-    "mongo": true,
-    "chroma": true,
-    "ollama": true
+  "status": "ok",
+  "services": {
+    "mongo": "up",
+    "chroma": "up",
+    "openai": "up"
   }
 }
 ```
@@ -139,14 +139,14 @@ Abuse protection signals:
 }
 ```
 
-## 6. Current Baseline (from local smoke run)
+## 6. Current Baseline (from production)
 
-- Health endpoint reports all dependencies up (`mongo`, `chroma`, `ollama` all `true`).
+- Health endpoint reports all dependencies up (`mongo`, `chroma`, `openai` all `up`).
 - Guardrail probes return deterministic refusal message on injection attempts.
 - Summary refresh occurs after each 5 stored messages.
-- RAG returns source attributions from indexed docs.
+- RAG returns answers grounded in indexed Telesur documentation.
 
-**Baseline metrics (local Docker, CPU-only Ollama):**
+**Baseline metrics (Render production, OpenAI gpt-4o-mini):**
 
 | Metric                      | Value      | Notes                              |
 | --------------------------- | ---------- | ---------------------------------- |

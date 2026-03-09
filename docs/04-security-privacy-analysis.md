@@ -41,16 +41,19 @@ Required production actions:
 
 ## 4. Secrets Management
 
-- Configuration is env-based (`.env`), no hardcoded API keys in source.
+- Configuration is env-based (`.env` locally, Render environment variables in production), no hardcoded API keys in source.
 - Frontend container does not load full `.env` (reduces accidental secret propagation).
+- OpenAI API key is stored in Render environment variables (encrypted at rest by Render).
 
-## 5. Data Minimization
+## 5. Data Minimization and Third-Party Processing
 
 - Telemetry stores operational metadata, not full prompt payloads.
 - Summary compresses long history to reduce context token usage.
+- User messages are sent to OpenAI API for generation and embedding. OpenAI’s data usage policy (as of March 2025): API data is not used for model training. A Data Processing Agreement (DPA) is available for GDPR compliance if needed.
+- No personally identifiable information (PII) is intentionally collected. Session IDs are random UUIDs.
 
 ## 6. Failure Handling
 
-- Health endpoint reports Mongo/Chroma/Ollama status.
+- Health endpoint reports MongoDB, ChromaDB, and OpenAI API status.
 - Chat endpoint catches runtime exceptions and returns safe fallback.
 - Retrieval failures degrade gracefully instead of crashing requests.
