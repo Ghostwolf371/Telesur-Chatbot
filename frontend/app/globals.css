@@ -140,3 +140,100 @@ body {
 .animate-chat-close {
   animation: chat-slide-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
 }
+
+/* ── Markdown inside assistant chat bubbles ── */
+.prose-chat {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.prose-chat p {
+  margin: 0.4em 0;
+}
+.prose-chat p:first-child {
+  margin-top: 0;
+}
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+.prose-chat strong {
+  font-weight: 700;
+  color: #ffd200;
+}
+.prose-chat em {
+  font-style: italic;
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+.prose-chat ul {
+  list-style-type: disc;
+}
+.prose-chat ol {
+  list-style-type: decimal;
+}
+.prose-chat li {
+  margin: 0.2em 0;
+}
+.prose-chat li::marker {
+  color: #ffd200;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+}
+.prose-chat h1 {
+  font-size: 1.15em;
+}
+.prose-chat h2 {
+  font-size: 1.05em;
+}
+.prose-chat h3 {
+  font-size: 1em;
+}
+.prose-chat code {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.prose-chat pre {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.75em 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.prose-chat pre code {
+  background: none;
+  padding: 0;
+}
+.prose-chat a {
+  color: #ffd200;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-chat hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0.6em 0;
+}
+.prose-chat table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+.prose-chat th,
+.prose-chat td {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35em 0.6em;
+  text-align: left;
+}
+.prose-chat th {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+}

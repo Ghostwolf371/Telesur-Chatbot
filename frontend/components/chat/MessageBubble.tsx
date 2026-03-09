@@ -1,6 +1,7 @@
 import { SourceAttribution, type SourceItem } from "./SourceAttribution";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 type MessageBubbleProps = {
   role: "user" | "assistant";
@@ -81,7 +82,13 @@ export function MessageBubble({
               : "rounded-tl-sm bg-telesur-blue text-white"
           }`}
         >
-          <p className="whitespace-pre-wrap break-words">{content}</p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap break-words">{content}</p>
+          ) : (
+            <div className="prose-chat break-words">
+              <ReactMarkdown>{content}</ReactMarkdown>
+            </div>
+          )}
         </div>
 
         {/* Sender Name and Time Below the Bubble */}
