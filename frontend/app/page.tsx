@@ -409,7 +409,11 @@ export default function HomePage() {
           <div>
             <h4 className="font-display text-4xl font-semibold">Download MyTelesur</h4>
             <div className="mt-5 flex gap-3">
-              <a href="#" aria-label="Download on Google Play" className="block">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.cerillion.selfservice.telesurapp&hl=en&pli=1"
+                aria-label="Download on Google Play"
+                className="block"
+              >
                 <Image
                   src="/image-1772937125095.png"
                   alt="Download on Google Play"
@@ -418,7 +422,11 @@ export default function HomePage() {
                   className="h-auto w-[146px]"
                 />
               </a>
-              <a href="#" aria-label="Download on the App Store" className="block">
+              <a
+                href="https://apps.apple.com/gy/app/my-telesur/id6451263674"
+                aria-label="Download on the App Store"
+                className="block"
+              >
                 <Image
                   src="/image-1772937128646.png"
                   alt="Download on the App Store"

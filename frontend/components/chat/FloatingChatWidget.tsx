@@ -51,7 +51,7 @@ export function FloatingChatWidget() {
       id: "welcome",
       role: "assistant",
       content:
-        "Bon bini! I'm TeleBot — your Telesur support assistant. Ask me about mobile plans, fiber internet, or entertainment packages.",
+        "I'm TeleBot — your Telesur support assistant. Ask me about mobile plans, fiber internet, or entertainment packages.",
     },
   ]);
 
