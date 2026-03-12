@@ -296,11 +296,18 @@ Geschikt voor development en lichte productie.
 - Domein: €1/maand
 - **Totaal: €22-30/maand**
 
-### Medium Gebruik
+### Medium productie
 - Render betaald: ~€14/maand
 - MongoDB M5: ~€57/maand
 - OpenAI API (~1000 req/dag): €50–€100/maand
 - **Totaal: ~€121–€171/maand**
+
+### Grootte productie
+- Render (Auto-scaling): ~€300/maand
+- MongoDB Dedicated (M30+): ~€400 – €750/maand
+- OpenAI API (~100.000 req/dag): €500 (Mini) – €8.500 (Full)/maand
+- Infrastructuur (CDN/Mail/Logs): ~€250/maand
+- **Totaal: ~€1.450 – €9.800/maand**
 
 ---
 
@@ -359,3 +366,5 @@ Geschikt voor development en lichte productie.
 ---
 
 **Einde van Architectuur Verslag**
+
+
