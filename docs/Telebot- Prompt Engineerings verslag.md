@@ -1,4 +1,4 @@
----
+
 **Onderdeel**: Prompt Engineering Verslag  
 **Opleiding**: Software Engineering  
 **Docent**: Deborah Bergwijn  
@@ -10,7 +10,7 @@
 - Terrence Linger (SE/1123/037)
 - Shantenoe Bissumbhar (SE/1123/011)
 
----
+
 
 # TeleBot Prompt Engineering Rapport
 
