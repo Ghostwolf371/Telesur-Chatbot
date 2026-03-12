@@ -1,15 +1,15 @@
+# PROMPT ENGINEERINGS VERSLAG
 
-**Onderdeel**: Prompt Engineering Verslag  
-**Opleiding**: Software Engineering  
-**Docent**: Deborah Bergwijn  
+## Projectgegevens
 
-**Groepsleden**:
-- Amar Sewdas (SE/1123/084)
-- Rushil Ganpat (SE/1123/019)
-- Chen Poun Joe Elton (SE/1123/013)
-- Terrence Linger (SE/1123/037)
-- Shantenoe Bissumbhar (SE/1123/011)
+| Item | Details |
+|------|---------|
+| **Onderdeel** | Architectuur verslag |
+| **Opleiding** | Software Engineering |
+| **Docent** | Deborah Bergwijn |
+| **Groepsleden** | Amar Sewdas (SE/1123/084)<br/>Rushil Ganpat (SE/1123/019)<br/>Chen Poun Joe Elton (SE/1123/013)<br/>Terrence Linger (SE/1123/037)<br/>Shantenoe Bissumbhar (SE/1123/011) |
 
+---
 
 
 # TeleBot Prompt Engineering Rapport
