@@ -302,6 +302,13 @@ Geschikt voor development en lichte productie.
 - OpenAI API (~1000 req/dag): €50–€100/maand
 - **Totaal: ~€121–€171/maand**
 
+### Grootte productie
+- Render (Auto-scaling): ~€300/maand
+- MongoDB Dedicated (M30+): ~€400 – €750/maand
+- OpenAI API (~100.000 req/dag): €500 (Mini) – €8.500 (Full)/maand
+- Infrastructuur (CDN/Mail/Logs): ~€250/maand
+- **Totaal: ~€1.450 – €9.800/maand**
+
 ---
 
 ## Security, Privacy & Betrouwbaarheid
@@ -359,3 +366,4 @@ Geschikt voor development en lichte productie.
 ---
 
 **Einde van Architectuur Verslag**
+
