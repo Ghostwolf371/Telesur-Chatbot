@@ -12,6 +12,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { MessageBubble } from "./MessageBubble";
 import type { SourceItem } from "./SourceAttribution";
+import { containsPII } from "@/lib/pii";
 
 /* ── Types ── */
 type ChatMessage = {
@@ -47,6 +48,7 @@ export function FloatingChatWidget() {
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [piiWarning, setPiiWarning] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -172,6 +174,12 @@ export function FloatingChatWidget() {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
+
+    if (containsPII(trimmed)) {
+      setPiiWarning(true);
+      return;
+    }
+    setPiiWarning(false);
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -407,6 +415,13 @@ export function FloatingChatWidget() {
             </div>
           )}
 
+          {/* PII warning */}
+          {piiWarning && (
+            <div className="mx-4 mb-1 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+              Your message contains personal information (phone number, email, ID, or card number). Please remove it before sending.
+            </div>
+          )}
+
           {/* Input bar */}
           <form
             onSubmit={onSubmit}
@@ -415,7 +430,10 @@ export function FloatingChatWidget() {
             <input
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                if (piiWarning) setPiiWarning(false);
+              }}
               placeholder="Type your question..."
               className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-telesur-blue/40 focus:ring-2 focus:ring-telesur-blue/10"
             />
