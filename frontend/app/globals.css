@@ -16,11 +16,16 @@ body {
   overflow-x: hidden;
 }
 
-/* Prevent layout shift when mobile keyboard opens */
-@supports (height: 100dvh) {
-  html {
-    height: 100dvh;
-  }
+/* Lock html/body height to prevent iOS keyboard layout shift */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Allow scrolling inside the app content, not on body */
+#app-root {
+  height: 100%;
+  overflow: auto;
 }
 
 body {

@@ -100,9 +100,9 @@ export function MessageBubble({
             {isUser ? `YOU • ${displayTime}` : `TELEBOT • ${displayTime}`}
           </span>
           {!isUser && onFeedback && content && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {feedbackGiven ? (
-                <span className="text-[10px] font-medium text-emerald-500">
+                <span className="text-xs font-medium text-emerald-500">
                   {feedbackGiven === "up" ? "👍 Thanks!" : "👎 Thanks!"}
                 </span>
               ) : (
@@ -110,20 +110,20 @@ export function MessageBubble({
                   <button
                     type="button"
                     onClick={() => { setFeedbackGiven("up"); onFeedback(true); }}
-                    className="rounded p-0.5 text-slate-300 transition hover:text-emerald-500"
+                    className="rounded-md p-1 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-500 active:scale-95"
                     title="Helpful"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                       <path d="M1 8.998a1 1 0 011-1h1a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1v-6zm5.5-5.003a3.224 3.224 0 00-.327 1.42v.003l.003.148c.017.357.07.708.158 1.049l.041.152H4.25A2.25 2.25 0 002 8.998v.5l1.646 5.766A1 1 0 004.608 16h7.558a2.25 2.25 0 002.093-1.418l2.489-6.284A1.25 1.25 0 0015.583 6.5h-3.558l.607-2.429A2.25 2.25 0 0010.451 1.5h-.003a1.5 1.5 0 00-1.372.892L6.5 3.995z" />
                     </svg>
                   </button>
                   <button
                     type="button"
                     onClick={() => { setFeedbackGiven("down"); onFeedback(false); }}
-                    className="rounded p-0.5 text-slate-300 transition hover:text-red-400"
+                    className="rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-400 active:scale-95"
                     title="Not helpful"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                       <path d="M19 11.002a1 1 0 00-1 1v6a1 1 0 001 1h-1a1 1 0 001-1v-6a1 1 0 00-1-1zm-5.5 5.003a3.224 3.224 0 00.327-1.42v-.003a5.46 5.46 0 00-.161-1.197l-.041-.152H15.75a2.25 2.25 0 002.25-2.23v-.5L16.354 4.74A1 1 0 0015.392 4H7.834A2.25 2.25 0 005.74 5.418l-2.489 6.284A1.25 1.25 0 004.417 13.5h3.558l-.607 2.429a2.25 2.25 0 002.181 2.571h.003a1.5 1.5 0 001.372-.892l2.576-1.603z" />
                     </svg>
                   </button>

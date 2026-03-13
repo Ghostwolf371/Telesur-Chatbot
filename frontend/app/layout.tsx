@@ -48,9 +48,10 @@ export default function RootLayout({
       <body
         className={`${bodyFont.variable} ${displayFont.variable} antialiased`}
       >
-        <AppNavbar />
-
-        {children}
+        <div id="app-root">
+          <AppNavbar />
+          {children}
+        </div>
         <FloatingChatWidget />
       </body>
     </html>

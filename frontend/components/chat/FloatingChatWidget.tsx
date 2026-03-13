@@ -58,6 +58,21 @@ export function FloatingChatWidget() {
   ]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Track visual viewport height for iOS keyboard
+  const [popupHeight, setPopupHeight] = useState<string>("calc(100vh - 80px)");
+  useEffect(() => {
+    function update() {
+      const h = window.visualViewport?.height ?? window.innerHeight;
+      setPopupHeight(`${h - 80}px`);
+    }
+    update();
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", update);
+      return () => vv.removeEventListener("resize", update);
+    }
+  }, []);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const promptChips = useMemo<PromptChip[]>(
@@ -263,6 +278,7 @@ export function FloatingChatWidget() {
   // Hide the floating widget on the dedicated chat page
   if (pathname === "/chat") return null;
 
+
   return (
     <>
       {/* ── Chat popup window ── */}
@@ -271,8 +287,8 @@ export function FloatingChatWidget() {
           className={`fixed z-50 flex flex-col overflow-hidden bg-white shadow-2xl
             ${isClosing ? "animate-chat-close" : "animate-chat-open"}
             bottom-0 left-0 right-0 rounded-t-3xl
-            sm:bottom-20 sm:left-auto sm:right-4 sm:rounded-3xl sm:w-[380px] sm:h-[560px] sm:max-h-[calc(100dvh-120px)]
-            h-[calc(100dvh-80px)]`}
+            sm:bottom-20 sm:left-auto sm:right-4 sm:rounded-3xl sm:w-[380px] sm:h-[560px] sm:max-h-[calc(100vh-120px)]`}
+          style={{ height: popupHeight }}
         >
           {/* Header */}
           <div className="flex items-center justify-between bg-telesur-blue px-4 py-3">
