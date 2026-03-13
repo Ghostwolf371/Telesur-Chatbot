@@ -1,24 +1,36 @@
-# TeleBot — Telesur AI Support Assistant
+# TeleBot — Telesur AI Klantenservice Assistent
 
-Production-ready AI customer support chatbot for Telesur services.
+🔗 **Live applicatie:** [https://telesur-chatbot.onrender.com](https://telesur-chatbot.onrender.com)
+
+Productieklare AI-chatbot voor klantenondersteuning bij Telesur-diensten (Mobiel, Fiber, Entertainment).
+
+## Projectgegevens
+
+| Item | Details |
+|------|---------|
+| **Opleiding** | Software Engineering |
+| **Docent** | Rwynn Christian |
+| **Groepsleden** | Amar Sewdas (SE/1123/084), Rushil Ganpat (SE/1123/019), Chen Poun Joe Elton (SE/1123/013), Terrence Linger (SE/1123/037), Shantenoe Bissumbhar (SE/1123/011) |
+
+## Technologieën
 
 - **Frontend**: Next.js 14 (App Router, Tailwind CSS)
 - **Backend**: Django 4.2 + Django REST Framework
 - **Database**: MongoDB (via MongoDB Atlas free tier)
-- **Vector DB**: ChromaDB (local persistent storage)
+- **Vector DB**: ChromaDB (lokale persistente opslag)
 - **AI**: OpenAI API (`gpt-4o-mini` + `text-embedding-3-small`)
 - **Hosting**: Render
 
 ---
 
-## 1. Prerequisites
+## 1. Vereisten
 
 - [Node.js 20+](https://nodejs.org/)
 - [Python 3.12+](https://python.org/)
-- [MongoDB Atlas](https://www.mongodb.com/atlas) free cluster (or local MongoDB)
-- [OpenAI API key](https://platform.openai.com/api-keys)
+- [MongoDB Atlas](https://www.mongodb.com/atlas) gratis cluster (of lokale MongoDB)
+- [OpenAI API-sleutel](https://platform.openai.com/api-keys)
 
-## 2. Local Development Setup
+## 2. Lokale Ontwikkeling
 
 ### Backend
 
@@ -28,17 +40,17 @@ python -m venv venv
 # Windows: venv\Scripts\activate | Mac/Linux: source venv/bin/activate
 pip install -r requirements.txt
 
-# Copy and edit environment variables
+# Kopieer en bewerk environment variables
 cp ../env.example ../.env
-# Edit ../.env with your OPENAI_API_KEY and MONGO_URI
+# Bewerk ../.env met je OPENAI_API_KEY en MONGO_URI
 
-# Run migrations
+# Database migraties
 python manage.py migrate --noinput
 
-# Ingest RAG data
+# RAG data inladen
 python scripts/ingest_docs.py --data-dir ../data --reset
 
-# Start the dev server
+# Start de server
 python manage.py runserver
 ```
 
@@ -48,7 +60,7 @@ python manage.py runserver
 cd frontend
 npm install
 
-# Create .env.local
+# Maak .env.local aan
 echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > .env.local
 echo "NEXT_PUBLIC_SHOW_TEST_FEEDBACK_PANEL=1" >> .env.local
 
@@ -58,28 +70,28 @@ npm run dev
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/api
 
-## 3. Deploy to Render
+## 3. Deployment naar Render
 
-### Option A: Render Blueprint (Recommended)
+### Optie A: Render Blueprint (Aanbevolen)
 
-1. Push this repo to GitHub
-2. Go to [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**
-3. Connect your repo, Render will detect `render.yaml`
-4. Set the required environment variables:
-   - `OPENAI_API_KEY` — your OpenAI API key
-   - `MONGO_URI` — your MongoDB Atlas connection string
-   - `CORS_ALLOWED_ORIGINS` — your frontend URL (e.g., `https://telebot-frontend.onrender.com`)
-   - `NEXT_PUBLIC_API_BASE_URL` — your backend URL (e.g., `https://telebot-backend.onrender.com`)
+1. Push deze repository naar GitHub
+2. Ga naar [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**
+3. Verbind je repository, Render detecteert `render.yaml`
+4. Stel de vereiste environment variables in:
+   - `OPENAI_API_KEY` — je OpenAI API-sleutel
+   - `MONGO_URI` — je MongoDB Atlas connectiestring
+   - `CORS_ALLOWED_ORIGINS` — je frontend URL (bijv. `https://telesur-chatbot.onrender.com`)
+   - `NEXT_PUBLIC_API_BASE_URL` — je backend URL (bijv. `https://telebot-backend.onrender.com`)
 5. Deploy!
 
-### Option B: Manual Setup
+### Optie B: Handmatige Setup
 
 **Backend (Web Service)**:
 - Runtime: Python
 - Root Directory: `backend`
 - Build Command: `./build.sh`
 - Start Command: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --worker-class gevent --workers 2 --timeout 180`
-- Add a 1GB disk mounted at `/opt/render/project/src/chroma_data`
+- Voeg een 1GB schijf toe op `/opt/render/project/src/chroma_data`
 
 **Frontend (Web Service)**:
 - Runtime: Node
@@ -87,70 +99,67 @@ npm run dev
 - Build Command: `npm ci && npm run build`
 - Start Command: `node .next/standalone/server.js`
 
-### Required Environment Variables
+### Vereiste Environment Variables
 
-| Variable | Service | Description |
+| Variable | Service | Beschrijving |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | Backend | Your OpenAI API key |
-| `OPENAI_MODEL` | Backend | Model name (default: `gpt-4o-mini`) |
-| `MONGO_URI` | Backend | MongoDB Atlas connection string |
-| `SECRET_KEY` | Backend | Django secret key (auto-generated in blueprint) |
+| `OPENAI_API_KEY` | Backend | Je OpenAI API-sleutel |
+| `OPENAI_MODEL` | Backend | Modelnaam (standaard: `gpt-4o-mini`) |
+| `MONGO_URI` | Backend | MongoDB Atlas connectiestring |
+| `SECRET_KEY` | Backend | Django secret key (auto-gegenereerd in blueprint) |
 | `ALLOWED_HOSTS` | Backend | `.onrender.com` |
 | `CORS_ALLOWED_ORIGINS` | Backend | Frontend URL |
 | `NEXT_PUBLIC_API_BASE_URL` | Frontend | Backend URL |
 
 ## 4. API Endpoints
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/chat` | Send a chat message |
-| POST | `/api/chat/stream` | Stream chat response (SSE) |
-| GET | `/api/history/<session_id>` | Get conversation history |
-| POST | `/api/summarize` | Generate conversation summary |
-| POST | `/api/feedback` | Submit feedback |
-| GET | `/api/feedback` | List feedback entries |
-| GET | `/api/telemetry` | View telemetry logs |
-| GET | `/api/dashboard` | Full monitoring dashboard data |
+| Methode | Route | Beschrijving |
+|---------|-------|-------------|
+| POST | `/api/chat` | Stuur een chatbericht |
+| POST | `/api/chat/stream` | Stream chatantwoord (SSE) |
+| GET | `/api/history/<session_id>` | Haal gespreksgeschiedenis op |
+| POST | `/api/summarize` | Genereer gesprekssamenvatting |
+| POST | `/api/feedback` | Feedback indienen |
+| GET | `/api/feedback` | Feedbackitems ophalen |
+| GET | `/api/telemetry` | Telemetry logs bekijken |
+| GET | `/api/dashboard` | Volledig monitoring dashboard |
 | GET | `/api/health` | Service health check |
 
-## 5. RAG Data Management
+## 5. RAG Data Beheer
 
-Place source documents (PDF/TXT/MD) in the `data/` folder, then ingest:
+Plaats brondocumenten (PDF/TXT/MD) in de `data/` map en laad ze in:
 
 ```bash
 cd backend
 
-# Scrape Telesur website
+# Telesur website scrapen
 python scripts/scrape_telesur.py --base-url https://www.telesur.sr --max-pages 50
 
-# Ingest into ChromaDB
+# Inladen in ChromaDB
 python scripts/ingest_docs.py --reset
 ```
 
-## 6. Environment Variable Reference
+## 6. Environment Variable Referentie
 
-**RAG auto-refresh controls**:
-- `RAG_AUTO_REFRESH_ENABLED` (default `1`)
-- `RAG_REFRESH_INTERVAL_MINUTES` (default `360`)
-- `RAG_SCRAPE_BASE_URL` (default `https://www.telesur.sr`)
-- `RAG_SCRAPE_MAX_PAGES` (default `50`)
+**RAG auto-verversing:**
+- `RAG_AUTO_REFRESH_ENABLED` (standaard `1`)
+- `RAG_REFRESH_INTERVAL_MINUTES` (standaard `360`)
+- `RAG_SCRAPE_BASE_URL` (standaard `https://www.telesur.sr`)
+- `RAG_SCRAPE_MAX_PAGES` (standaard `50`)
 
-**Memory and context controls**:
-- `SUMMARY_TRIGGER_EVERY` (default `10` user turns)
-- `TELEBOT_MEMORY_FETCH_LIMIT` (default `40`)
-- `TELEBOT_PROMPT_RECENT_MESSAGES` (default `20`)
-- `TELEBOT_PROMPT_RECENT_TOKENS` (default `1200`)
+**Geheugen en context:**
+- `SUMMARY_TRIGGER_EVERY` (standaard `10` gebruikersbeurten)
+- `TELEBOT_MEMORY_FETCH_LIMIT` (standaard `40`)
+- `TELEBOT_PROMPT_RECENT_MESSAGES` (standaard `20`)
+- `TELEBOT_PROMPT_RECENT_TOKENS` (standaard `1200`)
 
-**Rate limits**:
-- `CHAT_RATE_LIMIT` (default `30/min`)
-- `SUMMARIZE_RATE_LIMIT` (default `20/min`)
-- `FEEDBACK_RATE_LIMIT` (default `30/min`)
+**Rate limits:**
+- `CHAT_RATE_LIMIT` (standaard `30/min`)
+- `SUMMARIZE_RATE_LIMIT` (standaard `20/min`)
+- `FEEDBACK_RATE_LIMIT` (standaard `30/min`)
 
-## 7. Project Documentation
+## 7. Projectdocumentatie
 
-- [docs/01-architecture.md](docs/01-architecture.md)
-- [docs/02-implementation-deployment-plan.md](docs/02-implementation-deployment-plan.md)
-- [docs/03-monitoring-evaluation.md](docs/03-monitoring-evaluation.md)
-- [docs/04-security-privacy-analysis.md](docs/04-security-privacy-analysis.md)
-- [docs/05-user-testing-validation.md](docs/05-user-testing-validation.md)
-- [docs/06-prompt-engineering-report.md](docs/06-prompt-engineering-report.md)
+- [Architectuur Document](docs/Telebot-%20Architectuur%20Document.md)
+- [Prompt Engineering Verslag](docs/Telebot-%20Prompt%20Engineerings%20verslag.md)
+- [Gebruikerstest & Validatie](docs/Telebot-%20Gebruikerstest%20%26%20Validatie.md)

@@ -325,23 +325,74 @@ Geschikt voor development en lichte productie.
 
 ## Security, Privacy & Betrouwbaarheid
 
-### Security
-- Regex guardrails tegen basis prompt-injection en ongepaste input (`_blocked_patterns`).
-- **PII-detectie guardrail** (`_pii_patterns`): herkent BSN-nummers (9-cijferig), telefoonnummers (+597 / 06 / internationaal), e-mailadressen en creditcardnummers. Berichten met PII worden geweigerd vóór de LLM-aanroep met een gebruiksvriendelijke melding.
-- Rate limiting (30 requests/min) op `/api/chat` en `/api/summarize`.
-- Secrets via environment variables voor veilige opslag van API-sleutels.
-- HTTPS voor veilige communicatie.
+### 1. Prompt Injection Risico's & Beveiliging
 
-### Privacy
-- **PII wordt niet doorgestuurd naar de LLM**: de guardrail blokkeert berichten met persoonlijke gegevens voordat ze het model bereiken.
-- Minimale opslag van PII (persoonlijke gegevens).
-- Retentiebeleid voor opgeslagen data.
-- Pseudonimisering waar mogelijk.
+TeleBot verwerkt vrije-tekst invoer van onbekende gebruikers. Dit maakt het systeem vatbaar voor prompt-injection aanvallen, waarbij een kwaadwillende gebruiker probeert het systeemgedrag te manipuleren.
 
-### Betrouwbaarheid
-- `/api/health` endpoint voor systeemstatus.
-- Graceful degradation als document retrieval faalt.
-- Logging en error tracking voor monitoring.
+**Geïmplementeerde mitigaties:**
+
+- **Regex-guardrail (pre-LLM filter):** Elke gebruikersinvoer wordt vóór de LLM-aanroep gecontroleerd door `GuardrailService`. De service bevat 4 regex-patronen tegen prompt injection (`_blocked_patterns`):
+  - `ignore (all) previous/prior instructions` — instruction bypass
+  - `reveal (the) system/internal/developer prompt` — prompt exfiltratie
+  - `api key / password / token / secret / credential` — credential extractie
+  - `bypass safety / jailbreak / override instructions` — guardrail omzeiling
+- **PII-detectie guardrail:** Een tweede guardrail (`_pii_patterns`) herkent persoonlijke gegevens zoals BSN-nummers (9-cijferig), telefoonnummers (+597 / 06 / internationaal), e-mailadressen en creditcardnummers. Berichten met PII worden direct geweigerd.
+- **Vaste weigeringstekst:** Bij een match wordt een deterministische refusal geretourneerd (bijv. *"I cannot help with requests for secrets, credentials, or instruction bypass attempts."*). Er vindt geen LLM-aanroep plaats.
+- **Case-insensitive matching:** Alle patronen werken met `re.IGNORECASE` om variaties te vangen.
+
+**Residueel risico:** Patroongebaseerde guardrails kunnen onbekende, creatieve herformuleringen missen. Aanbeveling voor toekomstige versie: classifier-gebaseerde moderatie (bijv. OpenAI Moderation API) toevoegen als extra laag.
+
+### 2. Misbruikpreventie
+
+| Maatregel | Implementatie | Configuratie |
+|---|---|---|
+| Rate limiting (chat) | DRF `ScopedRateThrottle` op `/api/chat` | `CHAT_RATE_LIMIT` = 30/min |
+| Rate limiting (samenvatting) | DRF `ScopedRateThrottle` op `/api/summarize` | `SUMMARIZE_RATE_LIMIT` = 20/min |
+| Rate limiting (feedback) | DRF `ScopedRateThrottle` op `/api/feedback` | `FEEDBACK_RATE_LIMIT` = 30/min |
+| Rate limiting (anoniem) | Globale anonieme limiet | `ANON_RATE_LIMIT` = 120/min |
+| Inputvalidatie | DRF serializers controleren invoerformaat | Automatisch via Django REST Framework |
+| Foutafscherming | Fallback error responses zonder stacktrace | `DEBUG=0` in productie |
+
+Bij overschrijding van rate limits retourneert de API een `HTTP 429 Too Many Requests` response.
+
+**Aanbeveling:** Bij toekomstige authenticatie per-gebruiker quota's toevoegen en reverse-proxy WAF-regels overwegen.
+
+### 3. Persoonsgegevens en AVG (GDPR)
+
+**Dataminimalisatie — huidige maatregelen:**
+
+| Opgeslagen data | Doel | Bevat PII? |
+|---|---|---|
+| `sessions` (MongoDB) | Sessie-metadata, rolling summary | Nee — sessie-ID is random UUID |
+| `messages` (MongoDB) | Gespreksgeschiedenis | Mogelijk — gebruikers kunnen persoonlijke info typen |
+| `telemetry` (MongoDB) | Endpoint prestaties, fouten | Nee — alleen operationele metadata |
+| `feedback` (MongoDB) | Tester beoordelingen | Nee — tester-ID is pseudoniem |
+
+- **Geen authenticatie:** Er worden geen accounts, e-mailadressen of wachtwoorden opgeslagen.
+- **Pseudonimisering:** Sessie-ID's en tester-ID's zijn willekeurige UUID's zonder koppeling aan echte identiteiten.
+- **Telemetry bevat geen prompts:** Alleen operationele metadata (latency, tokenaantallen, foutmeldingen) wordt gelogd, niet de volledige promptinhoud.
+- **Verwerking door derden:** Gebruikersberichten worden naar de OpenAI API gestuurd voor generatie en embedding. Volgens het OpenAI API-beleid worden API-data niet gebruikt voor modeltraining. Een Data Processing Agreement (DPA) is beschikbaar voor AVG-compliance.
+
+**Vereiste productieacties:**
+- Retentiebeleid definiëren voor berichten en telemetry (bijv. automatisch verwijderen na 90 dagen).
+- Data-export en verwijderworkflows implementeren (recht op vergetelheid).
+- Privacyverklaring opstellen die gebruikers informeert over derde-partij verwerking (OpenAI).
+
+### 4. Secrets Management
+
+- Alle API-sleutels en configuratie via environment variables (`.env` lokaal, Render environment variables in productie).
+- `.env` staat in `.gitignore` — geen secrets in versiebeheer.
+- Frontend-container ontvangt alleen `NEXT_PUBLIC_API_BASE_URL` — geen backend-secrets worden blootgesteld.
+- `SECRET_KEY` wordt automatisch gegenereerd door Render Blueprint (`generateValue: true` in `render.yaml`).
+- OpenAI API-sleutel wordt encrypted-at-rest opgeslagen door Render.
+
+### 5. Foutafhandeling en Fallbacks
+
+- **Health endpoint:** `GET /api/health` controleert MongoDB, ChromaDB en OpenAI API status. Retourneert `{"status": "ok"}` met per-service statusmeldingen.
+- **Chat fallback:** Het chat-endpoint vangt runtime-exceptions op en retourneert een veilige foutmelding in plaats van een stacktrace.
+- **Retrieval degradation:** Als ChromaDB-retrieval faalt, kan het systeem graceful degraderen zonder de hele request te laten crashen.
+- **CORS-bescherming:** Alleen geconfigureerde origins (`CORS_ALLOWED_ORIGINS`) mogen de API benaderen. In productie staat `CORS_ALLOW_ALL_ORIGINS` op `0`.
+- **HTTPS:** Automatisch TLS-certificaat via Render voor alle productie-endpoints.
 
 ---
 
@@ -358,27 +409,240 @@ Geschikt voor development en lichte productie.
 
 ## Implementatie & Deployment
 
+### Omgevingen
+
+| Omgeving | Runtime | Doel | Toegang |
+|---|---|---|---|
+| **Development** | Lokale processen (`runserver` + `npm run dev`) | Feature-ontwikkeling, prompt-iteratie, debugging | `localhost:3000` (frontend), `localhost:8000` (API) |
+| **Productie** | Render Web Services (free tier) | Live service voor eindgebruikers | `https://telesur-chatbot.onrender.com` |
+
 ### Lokaal Starten
-1. Clone de repository.
-2. Kopieer `.env.example` naar `.env` en stel `OPENAI_API_KEY` en `MONGO_URI` in.
-3. Start de backend (dependencies installeren, migrate uitvoeren, server starten).
-4. Start de frontend (`npm install` en `npm run dev`).
-5. Test via localhost (chat interface en API endpoints).
 
-### Productie (Render)
-1. Code pushen naar GitHub.
-2. Repository verbinden met Render.
-3. Environment variables / secrets configureren.
-4. Automatische deployment via `render.yaml`.
-5. Render start automatisch de frontend (Next.js) en backend (Django + Gunicorn) services.
+```bash
+# 1. Clone de repository
+git clone <repo-url>
 
-### Rollback
-1. Render deployment revert naar een vorige versie.
-2. Alternatief: Git revert en opnieuw deployen.
-3. Database herstel via MongoDB Atlas backups.
+# 2. Backend opzetten
+cd backend
+python -m venv venv
+source venv/bin/activate          # Mac/Linux
+pip install -r requirements.txt
+
+# 3. Environment variables instellen
+cp ../env.example ../.env
+# Bewerk ../.env en stel OPENAI_API_KEY en MONGO_URI in
+
+# 4. Database migraties uitvoeren
+python manage.py migrate --noinput
+
+# 5. RAG data inladen
+python scripts/ingest_docs.py --data-dir ../data --reset
+
+# 6. Backend starten
+python manage.py runserver
+
+# 7. Frontend starten (nieuwe terminal)
+cd frontend
+npm install
+echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > .env.local
+npm run dev
+```
+
+**Validatie na opstart:**
+- `GET http://localhost:8000/api/health` → verwacht `{"status": "ok"}`
+- `POST http://localhost:8000/api/chat` → verwacht antwoord met bronnen
+- Open `http://localhost:3000` → chat interface
+
+### Productie Deployment (Render)
+
+**Optie A: Render Blueprint (Aanbevolen)**
+
+1. Push de repository naar GitHub.
+2. In Render Dashboard → **New** → **Blueprint**, verbind de repository. Render detecteert automatisch `render.yaml`.
+3. Stel de vereiste environment variables in (zie tabel hieronder).
+4. Klik op **Deploy**. Render start automatisch beide services.
+
+**Optie B: Handmatige Setup**
+
+1. Maak een Backend Web Service aan: Runtime=Python, Root=`backend`, Build=`./build.sh`, Start=`gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --worker-class gevent --workers 2 --timeout 180`.
+2. Voeg een 1 GB schijf toe op `/opt/render/project/src/chroma_data`.
+3. Maak een Frontend Web Service aan: Runtime=Node, Root=`frontend`, Build=`npm ci && npm run build`, Start=`node .next/standalone/server.js`.
+4. Stel environment variables in per `render.yaml`.
+
+**Opmerking:** Het `build.sh` script scrapt automatisch de Telesur-website en laadt documenten in ChromaDB bij elke deploy. Render free tier heeft cold starts (~30 seconden) na inactiviteit.
+
+### Configuratiebeheer
+
+Alle runtime-waarden worden aangestuurd via environment variables. Er zijn geen hardcoded secrets in de broncode.
+
+| Variable | Dev (lokaal) | Productie (Render) | Beschrijving |
+|---|---|---|---|
+| `DEBUG` | `1` (True) | `0` (False) | Django debug-modus |
+| `OPENAI_API_KEY` | Via `.env` | Render env var | OpenAI API-sleutel |
+| `OPENAI_MODEL` | `gpt-4o-mini` | `gpt-4o-mini` | LLM model |
+| `OPENAI_EMBED_MODEL` | `text-embedding-3-small` | `text-embedding-3-small` | Embedding model |
+| `MONGO_URI` | Via `.env` | Render env var | MongoDB connectiestring |
+| `MONGO_DB_NAME` | `telesur_dev` | `telesur_chatbot` | Database naam |
+| `ALLOWED_HOSTS` | `*` | `.onrender.com` | Toegestane hosts |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Frontend Render URL | CORS-origins |
+| `SECRET_KEY` | Via `.env` | Auto-gegenereerd | Django secret key |
+
+### Versiebeheerstrategie
+
+- **Git** voor alle broncode met GitHub als remote repository.
+- **`main` branch** is de productie-branch — Render deployt automatisch bij elke push naar `main`.
+- Feature-branches voor nieuwe functionaliteit, samengevoegd via pull requests.
+- Tags/releases voor belangrijke versies (bijv. `v1.0.0` voor eindoplevering).
+
+### Updateprocedure
+
+1. Trek de laatste broncode: `git pull origin main`.
+2. Controleer wijzigingen in `.env` / `render.yaml`.
+3. Push naar GitHub — Render deployt automatisch vanuit de verbonden branch.
+4. Monitor de deploy-logs in het Render dashboard.
+5. Valideer na deploy: controleer `/api/health` en test chatfunctionaliteit.
+
+Voor handmatige deploys: klik op "Manual Deploy" → "Clear build cache & deploy" in het Render dashboard.
+
+### Rollbackstrategie
+
+1. In het Render dashboard: selecteer een eerdere deploy en klik op **Rollback**.
+2. Alternatief: revert naar een eerdere tag/commit in Git en push om een nieuwe deploy te triggeren.
+3. Database-herstel indien nodig via MongoDB Atlas backups (automatische dagelijkse backups op Atlas).
+4. Valideer na rollback: controleer `/api/health` en test chatgedrag.
+
+### Beheer en Verantwoordelijkheden
+
+| Rol | Verantwoordelijkheid |
+|---|---|
+| **Development team** | Code, prompts, RAG-pipeline, deployments |
+| **Data-eigenaar** | Service-documentatie in `/data` bijhouden |
+| **Operationeel beheer** | Telemetry monitoren, container health bewaken |
+
+---
+
+## Monitoring & Evaluatie
+
+### 1. Gelogde Metrics
+
+Elke request naar `/api/chat` slaat de volgende telemetry op in MongoDB:
+
+| Metric | Beschrijving |
+|---|---|
+| `endpoint` | Aangesproken API-endpoint |
+| `ttft_ms` | Responstijd (time to first token, in milliseconden) |
+| `total_tokens_est` | Geschat totaal aantal tokens (input + output) |
+| `status` | `ok` of `error` |
+| `error_message` | Foutmelding indien van toepassing |
+| `created_at` | Timestamp van het verzoek |
+
+Niet-chat endpoints worden ook gelogd via de `ApiTelemetryMiddleware` voor latency- en erroroverzicht.
+
+### 2. Monitoring Endpoints
+
+| Endpoint | Retourneert |
+|---|---|
+| `GET /api/health` | Status van MongoDB, ChromaDB en OpenAI API |
+| `GET /api/telemetry` | Recente telemetry-items + samenvatting (totaal requests, error rate, gem. latency, gem. tokens) |
+| `GET /api/dashboard` | Geconsolideerd overzicht: telemetry, feedback, gesprekken, validatie-voortgang |
+| `GET /api/feedback` | Feedback-items + samenvatting (totaal, unieke testers, gemiddelde score, succespercentage) |
+
+### 3. Voorbeeld API-Responses
+
+**`GET /api/health`**
+
+```json
+{
+  "status": "ok",
+  "services": {
+    "mongo": "up",
+    "chroma": "up",
+    "openai": "up"
+  }
+}
+```
+
+**`GET /api/dashboard` (uittreksel)**
+
+```json
+{
+  "telemetry": {
+    "total_requests": 147,
+    "error_requests": 2,
+    "error_rate": 0.014,
+    "avg_ttft_ms": 3420.5,
+    "avg_total_tokens_est": 285
+  },
+  "conversations": {
+    "total_sessions": 12,
+    "total_user_messages": 87,
+    "total_messages": 174
+  },
+  "feedback": {
+    "total_feedback": 18,
+    "unique_testers": 3,
+    "avg_rating": 3.9,
+    "success_rate": 0.78
+  },
+  "validation": {
+    "required": { "testers": 3, "conversations": 20, "feedback": 20 },
+    "current": { "testers": 3, "conversations": 30, "feedback": 18 },
+    "ready": false
+  }
+}
+```
+
+**`GET /api/telemetry` (enkel item)**
+
+```json
+{
+  "endpoint": "/api/chat",
+  "ttft_ms": 2810,
+  "total_tokens_est": 245,
+  "status": "ok",
+  "error_message": null,
+  "created_at": "2026-02-18T14:22:03.412Z"
+}
+```
+
+### 4. Frontend Monitoring Pagina
+
+De frontend bevat een `/monitor` pagina die het dashboard-endpoint visualiseert. Hiermee kunnen beheerders in real-time de volgende gegevens bekijken:
+- Totaal aantal gesprekken en berichten
+- Gemiddelde responstijd en error rate
+- Feedbackscores per tester en per scenario
+- Voortgang richting validatiedoelen (testers, gesprekken, feedback)
+
+### 5. Baseline Metrics (Productie)
+
+| Metric | Waarde | Toelichting |
+|---|---|---|
+| Gem. responstijd (TTFT) | ~3-5 seconden | OpenAI `gpt-4o-mini` via API |
+| Gem. tokens per antwoord | ~150-250 | Beperkt door promptontwerp |
+| Error rate | < 2% | Voornamelijk timeouts bij cold starts |
+| Guardrail block rate | 100% | Alle 4 regex-patronen getest |
+| Gem. feedbackscore | ~3.5-4.0 / 5 | Uit initiële smoke testing |
+| Rate limit triggers | 0 | Binnen 30 req/min drempel |
+
+### 6. Evaluatieloop
+
+1. Exporteer telemetry-snapshot (dagelijks/wekelijks) via `GET /api/telemetry`.
+2. Identificeer latency-pieken en mislukte interacties.
+3. Inspecteer problematische sessies via `GET /api/history/<session_id>`.
+4. Verbeter prompts, retrieval-corpus of guardrail-patronen.
+5. Voer opnieuw smoke- en gebruikerstests uit.
+6. Monitor `avg_rating` en `success_rate` via feedback-endpoint voor klanttevredenheid.
+
+### 7. Verbeteracties Uit Baseline
+
+| # | Bevinding | Actie | Resultaat |
+|---|---|---|---|
+| 1 | Cold-start latency hoog | Prompt gecomprimeerd met ~60%, model parameters geoptimaliseerd | Latency ↓ van ~8-10s naar ~3-5s |
+| 2 | Antwoorden te lang | `max_tokens` beperkt, promptregel "1-3 zinnen max" toegevoegd | Kortere, gerichtere antwoorden |
+| 3 | Herhaalde antwoorden bij follow-up "ja" | Regel 5 toegevoegd: "never repeat a previous answer" | Follow-ups geven nu nieuwe informatie |
+| 4 | Gevent workers voor concurrency | Overgestapt naar gevent workers + SSE streaming | Betere perceived-latency |
 
 ---
 
 **Einde van Architectuur Verslag**
-
 
