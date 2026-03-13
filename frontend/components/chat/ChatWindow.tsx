@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageBubble } from "./MessageBubble";
 import type { SourceItem } from "./SourceAttribution";
 
@@ -85,6 +85,28 @@ export function ChatWindow() {
     ]);
     inputRef.current?.focus();
   };
+
+  /* ── Submit feedback ── */
+  const handleFeedback = useCallback(
+    async (positive: boolean) => {
+      if (!sessionId) return;
+      try {
+        await fetch(`${apiBaseUrl}/api/feedback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            rating: positive ? 5 : 1,
+            success: positive,
+            scenario: "other",
+          }),
+        });
+      } catch {
+        /* feedback is best-effort */
+      }
+    },
+    [sessionId, apiBaseUrl],
+  );
 
   /* ── Send message ── */
   const onSubmit = async (e: FormEvent) => {
@@ -262,6 +284,11 @@ export function ChatWindow() {
               role={msg.role}
               content={msg.content}
               sources={msg.sources}
+              onFeedback={
+                msg.role === "assistant" && !msg.id.startsWith("welcome")
+                  ? (positive: boolean) => handleFeedback(positive)
+                  : undefined
+              }
             />
           ))}
           {isLoading && (

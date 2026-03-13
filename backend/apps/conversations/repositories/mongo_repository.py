@@ -162,6 +162,7 @@ class MongoRepository:
         error_requests = self._telemetry.count_documents({"status": {"$ne": "ok"}})
         avg_ttft_ms = 0.0
         avg_total_tokens_est = 0.0
+        total_tokens_sum = 0
 
         aggregate = list(
             self._telemetry.aggregate(
@@ -171,6 +172,7 @@ class MongoRepository:
                             "_id": None,
                             "avg_ttft_ms": {"$avg": "$ttft_ms"},
                             "avg_total_tokens_est": {"$avg": "$total_tokens_est"},
+                            "total_tokens_sum": {"$sum": "$total_tokens_est"},
                         }
                     }
                 ]
@@ -181,14 +183,22 @@ class MongoRepository:
             avg_total_tokens_est = float(
                 aggregate[0].get("avg_total_tokens_est") or 0.0
             )
+            total_tokens_sum = int(aggregate[0].get("total_tokens_sum") or 0)
 
         error_rate = (error_requests / total_requests) if total_requests else 0.0
+
+        # gpt-4o-mini: $0.15/1M input, $0.60/1M output → blended ~$0.30/1M
+        cost_per_token = 0.30 / 1_000_000
+        cost_usd_est = round(total_tokens_sum * cost_per_token, 6)
+
         return {
             "total_requests": int(total_requests),
             "error_requests": int(error_requests),
             "error_rate": float(error_rate),
             "avg_ttft_ms": round(avg_ttft_ms, 2),
             "avg_total_tokens_est": round(avg_total_tokens_est, 2),
+            "total_tokens_sum": total_tokens_sum,
+            "cost_usd_est": cost_usd_est,
         }
 
     def insert_feedback(self, payload: dict[str, Any]) -> dict[str, Any]:

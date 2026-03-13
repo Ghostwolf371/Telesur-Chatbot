@@ -80,6 +80,9 @@ De chatbot wordt volledig gehost in de cloud via Render en is toegankelijk via e
 - **Tailwind CSS**
 - **Shadcn-style UI components**
 - **SSE streaming ondersteuning**
+- **react-markdown** voor geformatteerde chatantwoorden
+- **Feedback UI**: thumbs-up / thumbs-down knoppen per chatbericht (POST naar `/api/feedback`)
+- **Monitoring dashboard** (`/monitor`): stat-kaarten, kosteninschatting, latency-sparkline en feedback-overzicht
 
 ### Backend
 - **Django 4.2**
@@ -93,6 +96,7 @@ De chatbot wordt volledig gehost in de cloud via Render en is toegankelijk via e
   - `/api/health`
   - `/api/telemetry`
   - `/api/dashboard`
+  - `/api/feedback`
 
 ### ChromaDB
 - Lokale persistente vectoropslag
@@ -128,7 +132,7 @@ graph LR
     POST["POST /api/chat"]
     Backend["Backend<br/>Django + DRF"]
     Check["Guardrail check"]
-    Guardrail["Guardrail<br/>Regex Filter"]
+    Guardrail["Guardrail<br/>Regex Filter<br/>(Injection + PII)"]
     Safe["Safe/Blocked<br/>input"]
     RetrieveCtx["Retrieve context"]
     RAG["RAG Service"]
@@ -177,12 +181,16 @@ sequenceDiagram
 
     User->>Frontend: Send chat message
     Frontend->>Backend: POST /api/chat
-    Backend->>Guardrail: Guardrail check
+    Backend->>Guardrail: Guardrail check (injection + PII)
     
-    alt Input is blocked
+    alt Input is blocked (injection)
         Guardrail-->>Backend: Reject message [Blocked input]
-        Backend-->>Frontend: Error response
-        Frontend-->>User: Display error
+        Backend-->>Frontend: Refusal response
+        Frontend-->>User: Display refusal
+    else Input contains PII
+        Guardrail-->>Backend: Reject message [PII detected]
+        Backend-->>Frontend: PII warning response
+        Frontend-->>User: Display PII warning
     else Input is safe
         Guardrail-->>Backend: Approved [Safe input]
         Backend->>RAG: Retrieve context
@@ -206,8 +214,8 @@ sequenceDiagram
 
 - De gebruiker stuurt een bericht via de chatinterface van de frontend.
 - De frontend stuurt een verzoek naar POST /api/chat.
-- De backend voert guardrail-controles (veiligheidscontroles) uit.
-- Als het bericht veilig is, haalt de backend context op uit Chroma (RagService).
+- De backend voert guardrail-controles uit: eerst prompt-injection detectie (`is_blocked`), daarna PII-detectie (`contains_pii`) voor telefoonnummers, e-mailadressen, BSN-nummers en creditcardnummers.
+- Als het bericht veilig is en geen PII bevat, haalt de backend context op uit Chroma (RagService).
 - De backend voegt de samenvatting en de opgehaalde context toe aan de LLM-prompt en roept OpenAI API (gpt-4o-mini) aan.
 - De backend slaat de berichten van de gebruiker en de assistent op in MongoDB.
 - Na elke 5 opgeslagen berichten vernieuwt de backend de samenvatting via een verborgen LLM-samenvattingsoproep.
@@ -247,9 +255,13 @@ DRF scoped throttles zorgen voor rate limits (snelheidslimieten) op de endpoints
 - Environment variables voor secrets
 
 ### Observability
-- `/api/telemetry`
-- `/api/dashboard`
-- Frontend `/monitor` pagina
+- `/api/telemetry` — per-request latency, tokens, status
+- `/api/dashboard` — geaggregeerde statistieken inclusief tokenkosten (`cost_usd_est`) en feedback-samenvatting
+- Frontend `/monitor` pagina met:
+  - Stat-kaarten (requests, error rate, latency, tokens, kosten, conversations)
+  - Feedback-overzicht (entries, avg rating, success rate)
+  - **Latency-sparkline** (kleurgecodeerde staafgrafiek van de laatste 25 requests)
+  - Telemetry-logtabel met per-rij kostenkolom
 
 ---
 
@@ -314,12 +326,14 @@ Geschikt voor development en lichte productie.
 ## Security, Privacy & Betrouwbaarheid
 
 ### Security
-- Regex guardrails tegen basis prompt-injection en ongepaste input.
+- Regex guardrails tegen basis prompt-injection en ongepaste input (`_blocked_patterns`).
+- **PII-detectie guardrail** (`_pii_patterns`): herkent BSN-nummers (9-cijferig), telefoonnummers (+597 / 06 / internationaal), e-mailadressen en creditcardnummers. Berichten met PII worden geweigerd vóór de LLM-aanroep met een gebruiksvriendelijke melding.
 - Rate limiting (30 requests/min) op `/api/chat` en `/api/summarize`.
 - Secrets via environment variables voor veilige opslag van API-sleutels.
 - HTTPS voor veilige communicatie.
 
 ### Privacy
+- **PII wordt niet doorgestuurd naar de LLM**: de guardrail blokkeert berichten met persoonlijke gegevens voordat ze het model bereiken.
 - Minimale opslag van PII (persoonlijke gegevens).
 - Retentiebeleid voor opgeslagen data.
 - Pseudonimisering waar mogelijk.

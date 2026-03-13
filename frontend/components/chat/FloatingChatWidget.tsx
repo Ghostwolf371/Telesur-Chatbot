@@ -98,6 +98,28 @@ export function FloatingChatWidget() {
     }, 200);
   }, []);
 
+  /* ── Submit feedback ── */
+  const handleFeedback = useCallback(
+    async (positive: boolean) => {
+      if (!sessionId) return;
+      try {
+        await fetch(`${apiBaseUrl}/api/feedback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            rating: positive ? 5 : 1,
+            success: positive,
+            scenario: "other",
+          }),
+        });
+      } catch {
+        /* feedback is best-effort */
+      }
+    },
+    [sessionId, apiBaseUrl],
+  );
+
   const handleToggle = useCallback(() => {
     if (isOpen) {
       handleClose();
@@ -312,6 +334,11 @@ export function FloatingChatWidget() {
                 role={msg.role}
                 content={msg.content}
                 sources={msg.sources}
+                onFeedback={
+                  msg.role === "assistant" && !msg.id.startsWith("welcome")
+                    ? (positive: boolean) => handleFeedback(positive)
+                    : undefined
+                }
               />
             ))}
             {isLoading && (

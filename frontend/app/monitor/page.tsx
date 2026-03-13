@@ -9,6 +9,16 @@ type TelemetrySummary = {
   error_rate: number;
   avg_ttft_ms: number;
   avg_total_tokens_est: number;
+  total_tokens_sum: number;
+  cost_usd_est: number;
+};
+
+type FeedbackSummary = {
+  total_feedback: number;
+  unique_testers: number;
+  success_feedback: number;
+  success_rate: number;
+  avg_rating: number;
 };
 
 type ConversationSummary = {
@@ -19,6 +29,7 @@ type ConversationSummary = {
 
 type DashboardPayload = {
   telemetry: TelemetrySummary;
+  feedback: FeedbackSummary;
   conversations: ConversationSummary;
 };
 
@@ -138,7 +149,7 @@ export default function MonitorPage() {
       {d && (
         <>
           {/* Stat grid */}
-          <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
               label="Total Requests"
               value={String(d.telemetry.total_requests)}
@@ -166,11 +177,95 @@ export default function MonitorPage() {
               sub="estimated per request"
             />
             <StatCard
+              label="Estimated Cost"
+              value={`$${d.telemetry.cost_usd_est.toFixed(4)}`}
+              sub={`${d.telemetry.total_tokens_sum.toLocaleString()} total tokens · gpt-4o-mini`}
+            />
+            <StatCard
               label="Conversations"
               value={String(d.conversations.sessions_with_user_messages)}
               sub={`${d.conversations.total_user_messages} user messages`}
             />
           </div>
+
+          {/* Feedback summary */}
+          {d.feedback && (
+            <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                label="Feedback Entries"
+                value={String(d.feedback.total_feedback)}
+                sub={`${d.feedback.unique_testers} unique testers`}
+              />
+              <StatCard
+                label="Avg Rating"
+                value={d.feedback.avg_rating ? `${d.feedback.avg_rating.toFixed(1)}/5` : "—"}
+                accent={
+                  d.feedback.avg_rating >= 4
+                    ? "green"
+                    : d.feedback.avg_rating >= 3
+                      ? "amber"
+                      : d.feedback.avg_rating > 0
+                        ? "red"
+                        : undefined
+                }
+              />
+              <StatCard
+                label="Success Rate"
+                value={d.feedback.total_feedback ? `${(d.feedback.success_rate * 100).toFixed(0)}%` : "—"}
+                accent={
+                  d.feedback.success_rate >= 0.8
+                    ? "green"
+                    : d.feedback.success_rate >= 0.6
+                      ? "amber"
+                      : d.feedback.total_feedback > 0
+                        ? "red"
+                        : undefined
+                }
+              />
+              <StatCard
+                label="Successful"
+                value={String(d.feedback.success_feedback)}
+                sub={`of ${d.feedback.total_feedback} total`}
+              />
+            </div>
+          )}
+
+          {/* Latency sparkline */}
+          {telemetryItems.length > 0 && (() => {
+            const latest = telemetryItems.slice(0, 25).reverse();
+            const maxMs = Math.max(...latest.map((i) => i.ttft_ms), 1);
+            return (
+              <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="mb-3 text-sm font-semibold text-slate-700">
+                  Latency Trend{" "}
+                  <span className="font-normal text-slate-400">(last {latest.length} requests)</span>
+                </h2>
+                <div className="flex items-end gap-[3px]" style={{ height: 80 }}>
+                  {latest.map((item, i) => {
+                    const pct = (item.ttft_ms / maxMs) * 100;
+                    const color =
+                      item.ttft_ms > 3000
+                        ? "bg-red-500"
+                        : item.ttft_ms > 1500
+                          ? "bg-amber-400"
+                          : "bg-emerald-500";
+                    return (
+                      <div
+                        key={`bar-${i}`}
+                        title={`${item.ttft_ms} ms — ${new Date(item.created_at).toLocaleTimeString()}`}
+                        className={`flex-1 rounded-t ${color} min-w-[6px] transition-all`}
+                        style={{ height: `${Math.max(pct, 4)}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+                  <span>{new Date(latest[0]?.created_at).toLocaleTimeString()}</span>
+                  <span>{new Date(latest[latest.length - 1]?.created_at).toLocaleTimeString()}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Telemetry log table */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -186,6 +281,7 @@ export default function MonitorPage() {
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Latency</th>
                     <th className="px-3 py-2 font-medium">Tokens</th>
+                    <th className="px-3 py-2 font-medium">Cost</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -213,12 +309,15 @@ export default function MonitorPage() {
                       </td>
                       <td className="px-3 py-2">{item.ttft_ms} ms</td>
                       <td className="px-3 py-2">{item.total_tokens_est}</td>
+                      <td className="px-3 py-2 text-[11px] text-slate-400">
+                        ${((item.total_tokens_est || 0) * 0.3 / 1_000_000).toFixed(6)}
+                      </td>
                     </tr>
                   ))}
                   {telemetryItems.length === 0 && (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-3 py-6 text-center text-slate-400"
                       >
                         No telemetry data yet.

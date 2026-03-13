@@ -71,7 +71,7 @@ Samen zorgen deze stappen dat TeleBot consistent, veilig en gebonden aan brondat
 ### Output
 
 - Kort (1–3 zinnen) antwoord, één actie/volgende stap, bronvermelding indien mogelijk.
-- Vaste weigeringstekst bij sensitive requests.
+- Vaste weigeringstekst bij sensitive requests (injection) en bij PII-detectie (apart bericht).
 - Structured output optioneel (JSON) voor frontend.
 
 ---
@@ -148,12 +148,13 @@ Recent turns:
 
 **Type**: Deterministische regex-filter + vaste refusal.
 
-**Doel**: Blokkeer prompt-injection, credential-requests, instruction bypass.
+**Doel**: Blokkeer prompt-injection, credential-requests, instruction bypass én PII-lekkage (persoonlijke gegevens).
 
 **Huidge Implementatie:**
 
 ```python
-patterns = [
+# --- Injection / bypass patterns ---
+blocked_patterns = [
     r"\bignore\s+(?:all\s+)?(?:previous|prior)\s+instructions?\b",
     r"\breveal\s+(?:the\s+)?(?:system|internal|developer)\s+prompt\b",
     r"\b(?:api[\s_-]?key|password|token|secret|credential)s?\b",
@@ -161,12 +162,27 @@ patterns = [
 ]
 
 refusal = "I cannot help with requests for secrets, credentials, or instruction bypass attempts."
-# run regexes before LLM call; return refusal deterministically on match.
+
+# --- PII-detectie patterns ---
+pii_patterns = [
+    r"\b\d{9}\b",                                  # BSN / 9-cijferig ID
+    r"\b(?:\d[ -]?){13,19}\b",                      # Creditcardnummers
+    r"(?:\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}\b",  # Telefoonnummers
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",               # E-mailadressen
+]
+
+pii_refusal = (
+    "It looks like your message contains personal information "
+    "(e.g. ID number, phone number, credit-card number or e-mail). "
+    "Please remove it before sending."
+)
+
+# Volgorde: eerst is_blocked(), daarna contains_pii(), pas dan LLM-call.
 ```
 
-**Verwachte output**: Exact dezelfde refusal string; geen LLM-call.
+**Verwachte output**: Bij injection → vaste refusal string; bij PII → PII-waarschuwing; geen LLM-call in beide gevallen.
 
-**Onderbouwing**: Auditable, spaart compute, voorkomt adversarial leaks.
+**Onderbouwing**: Twee-laags pre-LLM filtering: laag 1 blokkeert adversariële input, laag 2 voorkomt dat persoonlijke gegevens naar het externe model worden gestuurd. Auditable, spaart compute, beschermt privacy.
 
 ---
 
@@ -241,7 +257,7 @@ Tijdens de ontwikkeling van TeleBot zijn meerdere iteraties van de prompts uitge
 
 ---
 
-### C. Safety Guardrail Pattern (Prompt 3) — 3 iteraties
+### C. Safety Guardrail Pattern (Prompt 3) — 4 iteraties
 
 **Iteratie 1 — Basislijst**
 - **Implementatie**: Eenvoudige string match `["password", "secret", "ignore instructions"]`.
@@ -253,10 +269,15 @@ Tijdens de ontwikkeling van TeleBot zijn meerdere iteraties van de prompts uitge
 - **Resultaat**: Veel beter op de meeste Bypass vaagen, maar "ignore all prior" werd gemist (optionele "all").
 - **Analyse**: Gappige regex voor optionele woorden.
 
-**Iteratie 3 — Productieklaar (Huidig)**
+**Iteratie 3 — Optionele groepen + env-var refusal**
 - **Implementatie**: Optionele groepen `r"\bignore\s+(?:all\s+)?(?:previous|prior)\s+instructions?\b"`, plus patterns voor "bypass safety", "jailbreak", "override instructions". Vaste refusal via env-var.
 - **Output**: Deterministisch gerefuseerd: "I cannot help with requests for secrets, credentials, or instruction bypass attempts."
-- **Conclusie**: Regex-gebaseerde pre-LLM filtering blokkeert bekende aanvallen; sparrt compute. Residueel risico: novel parafrasering (achterstandbeperking: classifier-moderatie toevoegen).
+- **Analyse**: Blokkeert bekende aanvallen; spaart compute. Maar geen bescherming tegen PII-lekkage.
+
+**Iteratie 4 — PII-detectie laag toegevoegd (Huidig)**
+- **Implementatie**: Tweede set regex-patronen (`_pii_patterns`) voor BSN-nummers (9-cijferig), creditcardnummers (13–19 cijfers), telefoonnummers (+597, 06, internationaal) en e-mailadressen. Aparte `contains_pii()` methode met eigen vriendelijke weigeringstekst. Beide views (`ChatView` en `ChatStreamView`) controleren eerst `is_blocked()`, daarna `contains_pii()`, pas dan LLM-call.
+- **Output**: PII-bericht → "It looks like your message contains personal information… Please remove it before sending." Geen LLM-call.
+- **Conclusie**: Twee-laags pre-LLM filtering: laag 1 blokkeert adversariële input, laag 2 voorkomt dat persoonlijke gegevens naar het externe model worden gestuurd. Privacy-by-design.
 
 ---
 
@@ -281,6 +302,7 @@ Tijdens de ontwikkeling van TeleBot zijn meerdere iteraties van de prompts uitge
 - Hoofdprompt retourneert betrouwbaar domein-gefocuste ondersteuningsantwoorden gegrond in opgehaalde context.
 - Samenvattingsprompt behoudt sessiecontinuïteit over 10+ turnconversaties.
 - Veiligheidspatronen blokkeren bekende injectie-/extractiepogingen met nul valse negatieven op testgroep.
+- **PII-detectielaag** voorkomt dat persoonlijke gegevens (telefoonnummers, e-mail, BSN, creditcard) naar het LLM worden gestuurd.
 - Few-shot-voorbeelden helpen toon- en formaatconsistentie voor stabiele production output.
 
 ### Efficiëntie
@@ -290,18 +312,20 @@ Tijdens de ontwikkeling van TeleBot zijn meerdere iteraties van de prompts uitge
 - Few-shot-blok voegt ~60 tokens toe (geoptimaliseerd van ~150) — minimale kosten voor aanzienlijke outputkwaliteitswinst.
 - Prompt gecomprimeerd met ~60% (Iteratie 4) die inferencetijd reduceert van ~8-10s naar ~3-5s op CPU.
 - Guardrail-regex draait vóór LLM-oproep, bespart inferencetijd bij geblokkeerde verzoeken.
+- PII-detectie regex draait als tweede laag vóór de LLM-oproep, bespaart eveneens tokens en beschermt privacy.
 
 ### Consistentie
 
 - Genummerde regels en gestructureerde secties produceren stylisch consistente antwoorden.
 - Few-shot-voorbeelden verankeren het antwoordformaat over diverse vraagtypen.
-- Veiligheidspad produceert telkens identieke weigeringsoutput.
+- Veiligheidspad produceert telkens identieke weigeringsoutput (injection-refusal én PII-refusal).
 - Samenvattingsformaat is beperkt tot 4-6 opsommingslijnen met vereiste velden.
 
 ### Foutgevoeligheid en randgevallen
 
 - **Risico**: Zwakke of verouderde brondocumenten verminderen antwoordprecisie → beperking: geplande RAG-vernieuwing van live Telesur-website.
 - **Risico**: Regex-alleen guardrails kunnen adversaire parafrasering missen → beperking achterstand: add classifier-gebaseerde moderatie en adversaire testgroep.
+- **Risico**: PII-regex kan edge-cases missen (bijv. ongebruikelijke nummerformaten) → beperking: patronen regelmatig bijwerken op basis van testresultaten.
 - **Risico**: Model kan prijzen hallucineren → beperking: regel 2 beperkt zich tot opgehaalde context alleen; few-shot-voorbeeld toont verwijzingspatroon.
 - **Risico**: Taaldetectie mislukking → beperking: regel 6 instrueert expliciet taalafstemming; few-shot ziet Nederlands en Engels.
 

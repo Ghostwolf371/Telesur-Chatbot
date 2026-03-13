@@ -90,6 +90,9 @@ class ChatView(APIView):
             if guardrail.is_blocked(user_message):
                 assistant_message = guardrail.refusal_message
                 sources = []
+            elif guardrail.contains_pii(user_message):
+                assistant_message = guardrail._pii_refusal
+                sources = []
             else:
                 retrieval_query = llm_service.build_retrieval_query(
                     user_message=user_message,
@@ -228,6 +231,20 @@ class ChatStreamView(APIView):
                 {
                     "session_id": session_id,
                     "assistant_message": refusal,
+                    "sources": [],
+                    "telemetry": {"ttft_ms": 0, "total_tokens_est": 0},
+                }
+            )
+
+        if guardrail.contains_pii(user_message):
+            pii_msg = guardrail._pii_refusal
+            history_service.add_assistant_message(
+                session_id=session_id, content=pii_msg, sources=[]
+            )
+            return Response(
+                {
+                    "session_id": session_id,
+                    "assistant_message": pii_msg,
                     "sources": [],
                     "telemetry": {"ttft_ms": 0, "total_tokens_est": 0},
                 }
