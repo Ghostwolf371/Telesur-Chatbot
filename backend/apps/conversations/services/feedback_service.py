@@ -18,6 +18,8 @@ class FeedbackService:
         is_synthetic: bool,
         scenario: str,
         notes: str | None = None,
+        user_question: str | None = None,
+        assistant_answer: str | None = None,
     ) -> dict[str, Any]:
         payload = {
             "session_id": session_id,
@@ -27,6 +29,8 @@ class FeedbackService:
             "is_synthetic": bool(is_synthetic),
             "scenario": scenario,
             "notes": (notes or "").strip(),
+            "user_question": (user_question or "").strip() or None,
+            "assistant_answer": (assistant_answer or "").strip() or None,
         }
         return self.repository.insert_feedback(payload)
 

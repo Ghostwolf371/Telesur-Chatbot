@@ -24,6 +24,8 @@ class FeedbackCreateSerializer(serializers.Serializer):
         required=True,
     )
     notes = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=1000)
+    user_question = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=2000)
+    assistant_answer = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=4000)
 
 
 class FeedbackQuerySerializer(serializers.Serializer):

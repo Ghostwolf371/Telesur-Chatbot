@@ -62,6 +62,8 @@ class FeedbackView(APIView):
             is_synthetic=serializer.validated_data.get("is_synthetic", False),
             scenario=serializer.validated_data["scenario"],
             notes=serializer.validated_data.get("notes"),
+            user_question=serializer.validated_data.get("user_question"),
+            assistant_answer=serializer.validated_data.get("assistant_answer"),
         )
         return Response(feedback, status=status.HTTP_201_CREATED)
 

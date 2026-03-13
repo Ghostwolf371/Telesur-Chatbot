@@ -100,8 +100,13 @@ export function FloatingChatWidget() {
 
   /* ── Submit feedback ── */
   const handleFeedback = useCallback(
-    async (positive: boolean) => {
+    async (positive: boolean, msgIndex: number) => {
       if (!sessionId) return;
+      const assistantMsg = messages[msgIndex];
+      const userMsg = messages
+        .slice(0, msgIndex)
+        .reverse()
+        .find((m) => m.role === "user");
       try {
         await fetch(`${apiBaseUrl}/api/feedback`, {
           method: "POST",
@@ -111,13 +116,15 @@ export function FloatingChatWidget() {
             rating: positive ? 5 : 1,
             success: positive,
             scenario: "other",
+            user_question: userMsg?.content || "",
+            assistant_answer: assistantMsg?.content || "",
           }),
         });
       } catch {
         /* feedback is best-effort */
       }
     },
-    [sessionId, apiBaseUrl],
+    [sessionId, apiBaseUrl, messages],
   );
 
   const handleToggle = useCallback(() => {
@@ -328,7 +335,7 @@ export function FloatingChatWidget() {
             ref={scrollRef}
             className="telebot-scroll flex-1 space-y-1 overflow-y-auto bg-white px-4 py-4"
           >
-            {messages.map((msg) => (
+            {messages.map((msg, idx) => (
               <MessageBubble
                 key={msg.id}
                 role={msg.role}
@@ -336,7 +343,7 @@ export function FloatingChatWidget() {
                 sources={msg.sources}
                 onFeedback={
                   msg.role === "assistant" && !msg.id.startsWith("welcome")
-                    ? (positive: boolean) => handleFeedback(positive)
+                    ? (positive: boolean) => handleFeedback(positive, idx)
                     : undefined
                 }
               />

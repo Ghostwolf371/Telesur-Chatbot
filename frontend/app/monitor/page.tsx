@@ -41,6 +41,17 @@ type TelemetryItem = {
   created_at: string;
 };
 
+type FeedbackItem = {
+  session_id: string;
+  tester_id?: string;
+  rating: number;
+  success: boolean;
+  scenario: string;
+  user_question?: string;
+  assistant_answer?: string;
+  created_at: string;
+};
+
 /* ── Helper ── */
 function StatCard({
   label,
@@ -81,15 +92,17 @@ export default function MonitorPage() {
 
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [telemetryItems, setTelemetryItems] = useState<TelemetryItem[]>([]);
+  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setError("");
     try {
-      const [dRes, tRes] = await Promise.all([
+      const [dRes, tRes, fRes] = await Promise.all([
         fetch(`${apiBaseUrl}/api/dashboard`),
         fetch(`${apiBaseUrl}/api/telemetry`),
+        fetch(`${apiBaseUrl}/api/feedback`),
       ]);
       if (!dRes.ok) throw new Error(`Dashboard API ${dRes.status}`);
       if (!tRes.ok) throw new Error(`Telemetry API ${tRes.status}`);
@@ -98,6 +111,11 @@ export default function MonitorPage() {
       const tData = (await tRes.json()) as { items: TelemetryItem[] };
       setDashboard(dData);
       setTelemetryItems(tData.items || []);
+
+      if (fRes.ok) {
+        const fData = (await fRes.json()) as { items: FeedbackItem[] };
+        setFeedbackItems(fData.items || []);
+      }
     } catch {
       setError("Could not load monitoring data. Verify backend availability.");
     } finally {
@@ -191,24 +209,18 @@ export default function MonitorPage() {
           {/* Feedback summary */}
           {d.feedback && (
             <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                label="Feedback Entries"
-                value={String(d.feedback.total_feedback)}
-                sub={`${d.feedback.unique_testers} unique testers`}
-              />
-              <StatCard
-                label="Avg Rating"
-                value={d.feedback.avg_rating ? `${d.feedback.avg_rating.toFixed(1)}/5` : "—"}
-                accent={
-                  d.feedback.avg_rating >= 4
-                    ? "green"
-                    : d.feedback.avg_rating >= 3
-                      ? "amber"
-                      : d.feedback.avg_rating > 0
-                        ? "red"
-                        : undefined
-                }
-              />
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Feedback Entries</p>
+                <p className="mt-1 text-2xl font-bold text-slate-800">{String(d.feedback.total_feedback)}</p>
+                <a href="/feedback" className="mt-1 inline-block text-xs font-semibold text-sky-600 hover:text-sky-700 transition">View →</a>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Feedback</p>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="text-xl font-bold text-emerald-600">👍 {d.feedback.success_feedback ?? 0}</span>
+                  <span className="text-xl font-bold text-red-600">👎 {(d.feedback.total_feedback ?? 0) - (d.feedback.success_feedback ?? 0)}</span>
+                </div>
+              </div>
               <StatCard
                 label="Success Rate"
                 value={d.feedback.total_feedback ? `${(d.feedback.success_rate * 100).toFixed(0)}%` : "—"}
@@ -321,6 +333,72 @@ export default function MonitorPage() {
                         className="px-3 py-6 text-center text-slate-400"
                       >
                         No telemetry data yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Feedback log table */}
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">
+                Feedback Log
+              </h2>
+              <a
+                href="/feedback"
+                className="text-xs font-semibold text-sky-600 hover:text-sky-700 transition"
+              >
+                View all →
+              </a>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400">
+                    <th className="px-3 py-2 font-medium">Time</th>
+                    <th className="px-3 py-2 font-medium">Rating</th>
+                    <th className="px-3 py-2 font-medium">User Question</th>
+                    <th className="px-3 py-2 font-medium">Bot Answer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedbackItems.map((fb, idx) => (
+                    <tr
+                      key={`fb-${fb.session_id}-${idx}`}
+                      className="border-b border-slate-50 text-slate-600 last:border-0"
+                    >
+                      <td className="whitespace-nowrap px-3 py-2">
+                        {new Date(fb.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                            fb.rating >= 4
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-red-50 text-red-700"
+                          }`}
+                        >
+                          {fb.rating >= 4 ? "👍" : "👎"} {fb.rating >= 4 ? "Positive" : "Negative"}
+                        </span>
+                      </td>
+                      <td className="max-w-[250px] truncate px-3 py-2" title={fb.user_question || ""}>
+                        {fb.user_question || "—"}
+                      </td>
+                      <td className="max-w-[300px] truncate px-3 py-2 text-slate-400" title={fb.assistant_answer || ""}>
+                        {fb.assistant_answer || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                  {feedbackItems.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-6 text-center text-slate-400"
+                      >
+                        No feedback entries yet.
                       </td>
                     </tr>
                   )}
