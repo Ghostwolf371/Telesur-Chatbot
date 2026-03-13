@@ -125,84 +125,94 @@ De chatbot wordt volledig gehost in de cloud via Render en is toegankelijk via e
 ### System Architecture Diagram
 
 ```mermaid
-graph LR
-    User["👤 User"]
-    HTTP["HTTP"]
-    Frontend["Frontend<br/>Next.js<br/>Render"]
-    POST["POST /api/chat"]
-    Backend["Backend<br/>Django + DRF"]
-    Check["Guardrail check"]
-    Guardrail["Guardrail<br/>Regex Filter<br/>(Injection + PII)"]
-    Safe["Safe/Blocked<br/>input"]
-    RetrieveCtx["Retrieve context"]
-    RAG["RAG Service"]
-    Query["Query embeddings"]
-    ChromaDB["ChromaDB<br/>Vector DB"]
-    RelevantDocs["Relevant documents"]
-    ContextResults["Context results"]
-    GenerateResp["Generate response<br/>prompt + context"]
-    OpenAI["OpenAI API<br/>nLLM"]
-    AIResponse["AI response"]
-    Store["Store session &<br/>messages"]
-    MongoDB["MongoDB Atlas<br/>Sessions &<br/>Messages"]
-    Stored["Stored"]
-    ReturnAnswer["Return answer"]
-    Display["Display reply"]
+graph TB
+    User(["👤 Gebruiker (Browser)"])
 
-    User -->|Send chat message| HTTP
-    HTTP --> Frontend
-    Frontend -->|POST /api/chat| Backend
-    Backend -->|Guardrail check| Guardrail
-    Guardrail -->|Safe/Blocked| Backend
-    Backend -->|Retrieve context| RAG
-    RAG -->|Query embeddings| ChromaDB
-    ChromaDB -->|Relevant documents| RAG
-    RAG -->|Context results| Backend
-    Backend -->|Generate response| OpenAI
-    OpenAI -->|AI response| Backend
-    Backend -->|Store| MongoDB
-    MongoDB -->|Stored| Backend
-    Backend -->|Return answer| Frontend
-    Frontend -->|Display reply| User
+    subgraph RENDER ["Render Cloud Platform — HTTPS"]
+        FE["<b>Frontend</b><br/>Next.js 14 · Tailwind CSS<br/>Chat UI met SSE Streaming<br/>Monitor Dashboard · Feedback pagina<br/>Client-side PII-blokkade"]
+
+        BE["<b>Backend API</b><br/>Django 4.2 · Django REST Framework<br/>Gunicorn + gevent workers<br/>Rate Limiting (DRF Throttle)"]
+
+        GUARD["<b>Guardrail Service</b><br/>Prompt-injection filter (4 regex-patronen)<br/>PII-detectie (telefoon, e-mail, BSN, CC)"]
+
+        RAG["<b>RAG Service</b><br/>Retrieval-Augmented Generation<br/>Top-k context retrieval"]
+
+        CHROMA[("<b>ChromaDB</b><br/>Vectoropslag<br/>Persistent Disk")]
+    end
+
+    OPENAI["<b>OpenAI API</b><br/>Chat: gpt-4o-mini<br/>Embeddings: text-embedding-3-small"]
+
+    MONGO[("<b>MongoDB Atlas</b><br/>Sessions · Messages<br/>Telemetry · Feedback")]
+
+    User <-->|"HTTPS"| FE
+    FE -->|"REST API-calls"| BE
+    BE -->|"Invoercontrole"| GUARD
+    GUARD -->|"Veilige invoer"| RAG
+    RAG <-->|"Embedding query ↔<br/>Relevante documenten"| CHROMA
+    BE -->|"Prompt + context"| OPENAI
+    OPENAI -->|"AI-antwoord"| BE
+    BE <-->|"Opslag &amp; ophalen"| MONGO
+    BE -->|"Response (JSON / SSE)"| FE
 ```
 
 ### Sequence Diagram - Chat Flow
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Frontend as Frontend (Next.js)
-    participant Backend as Backend (Django + DRF)
-    participant Guardrail as Guardrail (Regex)
+    participant User as 👤 Gebruiker
+    participant FE as Frontend (Next.js)
+    participant BE as Backend (Django + DRF)
+    participant Guard as Guardrail Service
     participant RAG as RAG Service
-    participant ChromaDB
-    participant OpenAI
-    participant MongoDB as MongoDB Atlas
+    participant Chroma as ChromaDB
+    participant LLM as OpenAI API
+    participant DB as MongoDB Atlas
 
-    User->>Frontend: Send chat message
-    Frontend->>Backend: POST /api/chat
-    Backend->>Guardrail: Guardrail check (injection + PII)
-    
-    alt Input is blocked (injection)
-        Guardrail-->>Backend: Reject message [Blocked input]
-        Backend-->>Frontend: Refusal response
-        Frontend-->>User: Display refusal
-    else Input contains PII
-        Guardrail-->>Backend: Reject message [PII detected]
-        Backend-->>Frontend: PII warning response
-        Frontend-->>User: Display PII warning
-    else Input is safe
-        Guardrail-->>Backend: Approved [Safe input]
-        Backend->>RAG: Retrieve context
-        RAG->>ChromaDB: Query embeddings
-        ChromaDB-->>RAG: Relevant documents
-        RAG-->>Backend: Context results
-        Backend->>OpenAI: Generate response (prompt + context)
-        OpenAI-->>Backend: AI response
-        Backend->>MongoDB: Store session & messages
-        MongoDB-->>Backend: Stored
-        Backend-->>Frontend: Return answer
-        Frontend-->>User: Display reply
+    User->>FE: Stuur chatbericht
+
+    Note over FE: Client-side PII-check<br/>(telefoon, e-mail, BSN, CC)
+    alt PII gedetecteerd (client-side)
+        FE-->>User: Inline waarschuwing — bericht NIET verzonden
+    else Invoer is schoon
+        FE->>BE: POST /api/chat/stream
+
+        BE->>DB: Sessie aanmaken / ophalen
+        BE->>DB: Gebruikersbericht opslaan
+        BE->>DB: Recente berichten ophalen
+
+        BE->>Guard: Invoercontrole (injection + PII)
+
+        alt Prompt-injection gedetecteerd
+            Guard-->>BE: Geblokkeerd
+            BE-->>FE: Weigeringsrespons (JSON)
+            FE-->>User: Toon weigering
+        else PII gedetecteerd (server-side)
+            Guard-->>BE: PII gevonden
+            BE-->>FE: PII-waarschuwing (JSON)
+            FE-->>User: Toon PII-waarschuwing
+        else Invoer is veilig
+            Guard-->>BE:  Goedgekeurd
+
+            BE->>RAG: Context ophalen
+            RAG->>Chroma: Embedding-query
+            Chroma-->>RAG: Relevante documenten
+            RAG-->>BE: Context resultaten
+
+            BE->>LLM: Prompt + context + samenvatting
+            LLM-->>BE: AI-antwoord (streaming tokens)
+
+            BE-->>FE: SSE stream (tokens + bronnen + telemetry)
+            FE-->>User: Toon antwoord in real-time
+
+            BE->>DB: Assistentbericht + bronnen opslaan
+            BE->>DB: Telemetry loggen (latency, tokens, status)
+
+            opt Elke 5 berichten
+                BE->>LLM: Samenvattingsverzoek (achtergrond)
+                LLM-->>BE: Bijgewerkte samenvatting
+                BE->>DB: Samenvatting opslaan
+            end
+        end
     end
 ```
 
@@ -406,245 +416,4 @@ Bij overschrijding van rate limits retourneert de API een `HTTP 429 Too Many Req
 - Documenten moeten regelmatig worden bijgewerkt voor correcte antwoorden.
 
 ---
-
-## Implementatie & Deployment
-
-### Omgevingen
-
-| Omgeving | Runtime | Doel | Toegang |
-|---|---|---|---|
-| **Development** | Lokale processen (`runserver` + `npm run dev`) | Feature-ontwikkeling, prompt-iteratie, debugging | `localhost:3000` (frontend), `localhost:8000` (API) |
-| **Productie** | Render Web Services (free tier) | Live service voor eindgebruikers | `https://telesur-chatbot.onrender.com` |
-
-### Lokaal Starten
-
-```bash
-# 1. Clone de repository
-git clone <repo-url>
-
-# 2. Backend opzetten
-cd backend
-python -m venv venv
-source venv/bin/activate          # Mac/Linux
-pip install -r requirements.txt
-
-# 3. Environment variables instellen
-cp ../env.example ../.env
-# Bewerk ../.env en stel OPENAI_API_KEY en MONGO_URI in
-
-# 4. Database migraties uitvoeren
-python manage.py migrate --noinput
-
-# 5. RAG data inladen
-python scripts/ingest_docs.py --data-dir ../data --reset
-
-# 6. Backend starten
-python manage.py runserver
-
-# 7. Frontend starten (nieuwe terminal)
-cd frontend
-npm install
-echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > .env.local
-npm run dev
-```
-
-**Validatie na opstart:**
-- `GET http://localhost:8000/api/health` → verwacht `{"status": "ok"}`
-- `POST http://localhost:8000/api/chat` → verwacht antwoord met bronnen
-- Open `http://localhost:3000` → chat interface
-
-### Productie Deployment (Render)
-
-**Optie A: Render Blueprint (Aanbevolen)**
-
-1. Push de repository naar GitHub.
-2. In Render Dashboard → **New** → **Blueprint**, verbind de repository. Render detecteert automatisch `render.yaml`.
-3. Stel de vereiste environment variables in (zie tabel hieronder).
-4. Klik op **Deploy**. Render start automatisch beide services.
-
-**Optie B: Handmatige Setup**
-
-1. Maak een Backend Web Service aan: Runtime=Python, Root=`backend`, Build=`./build.sh`, Start=`gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --worker-class gevent --workers 2 --timeout 180`.
-2. Voeg een 1 GB schijf toe op `/opt/render/project/src/chroma_data`.
-3. Maak een Frontend Web Service aan: Runtime=Node, Root=`frontend`, Build=`npm ci && npm run build`, Start=`node .next/standalone/server.js`.
-4. Stel environment variables in per `render.yaml`.
-
-**Opmerking:** Het `build.sh` script scrapt automatisch de Telesur-website en laadt documenten in ChromaDB bij elke deploy. Render free tier heeft cold starts (~30 seconden) na inactiviteit.
-
-### Configuratiebeheer
-
-Alle runtime-waarden worden aangestuurd via environment variables. Er zijn geen hardcoded secrets in de broncode.
-
-| Variable | Dev (lokaal) | Productie (Render) | Beschrijving |
-|---|---|---|---|
-| `DEBUG` | `1` (True) | `0` (False) | Django debug-modus |
-| `OPENAI_API_KEY` | Via `.env` | Render env var | OpenAI API-sleutel |
-| `OPENAI_MODEL` | `gpt-4o-mini` | `gpt-4o-mini` | LLM model |
-| `OPENAI_EMBED_MODEL` | `text-embedding-3-small` | `text-embedding-3-small` | Embedding model |
-| `MONGO_URI` | Via `.env` | Render env var | MongoDB connectiestring |
-| `MONGO_DB_NAME` | `telesur_dev` | `telesur_chatbot` | Database naam |
-| `ALLOWED_HOSTS` | `*` | `.onrender.com` | Toegestane hosts |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Frontend Render URL | CORS-origins |
-| `SECRET_KEY` | Via `.env` | Auto-gegenereerd | Django secret key |
-
-### Versiebeheerstrategie
-
-- **Git** voor alle broncode met GitHub als remote repository.
-- **`main` branch** is de productie-branch — Render deployt automatisch bij elke push naar `main`.
-- Feature-branches voor nieuwe functionaliteit, samengevoegd via pull requests.
-- Tags/releases voor belangrijke versies (bijv. `v1.0.0` voor eindoplevering).
-
-### Updateprocedure
-
-1. Trek de laatste broncode: `git pull origin main`.
-2. Controleer wijzigingen in `.env` / `render.yaml`.
-3. Push naar GitHub — Render deployt automatisch vanuit de verbonden branch.
-4. Monitor de deploy-logs in het Render dashboard.
-5. Valideer na deploy: controleer `/api/health` en test chatfunctionaliteit.
-
-Voor handmatige deploys: klik op "Manual Deploy" → "Clear build cache & deploy" in het Render dashboard.
-
-### Rollbackstrategie
-
-1. In het Render dashboard: selecteer een eerdere deploy en klik op **Rollback**.
-2. Alternatief: revert naar een eerdere tag/commit in Git en push om een nieuwe deploy te triggeren.
-3. Database-herstel indien nodig via MongoDB Atlas backups (automatische dagelijkse backups op Atlas).
-4. Valideer na rollback: controleer `/api/health` en test chatgedrag.
-
-### Beheer en Verantwoordelijkheden
-
-| Rol | Verantwoordelijkheid |
-|---|---|
-| **Development team** | Code, prompts, RAG-pipeline, deployments |
-| **Data-eigenaar** | Service-documentatie in `/data` bijhouden |
-| **Operationeel beheer** | Telemetry monitoren, container health bewaken |
-
----
-
-## Monitoring & Evaluatie
-
-### 1. Gelogde Metrics
-
-Elke request naar `/api/chat` slaat de volgende telemetry op in MongoDB:
-
-| Metric | Beschrijving |
-|---|---|
-| `endpoint` | Aangesproken API-endpoint |
-| `ttft_ms` | Responstijd (time to first token, in milliseconden) |
-| `total_tokens_est` | Geschat totaal aantal tokens (input + output) |
-| `status` | `ok` of `error` |
-| `error_message` | Foutmelding indien van toepassing |
-| `created_at` | Timestamp van het verzoek |
-
-Niet-chat endpoints worden ook gelogd via de `ApiTelemetryMiddleware` voor latency- en erroroverzicht.
-
-### 2. Monitoring Endpoints
-
-| Endpoint | Retourneert |
-|---|---|
-| `GET /api/health` | Status van MongoDB, ChromaDB en OpenAI API |
-| `GET /api/telemetry` | Recente telemetry-items + samenvatting (totaal requests, error rate, gem. latency, gem. tokens) |
-| `GET /api/dashboard` | Geconsolideerd overzicht: telemetry, feedback, gesprekken, validatie-voortgang |
-| `GET /api/feedback` | Feedback-items + samenvatting (totaal, unieke testers, gemiddelde score, succespercentage) |
-
-### 3. Voorbeeld API-Responses
-
-**`GET /api/health`**
-
-```json
-{
-  "status": "ok",
-  "services": {
-    "mongo": "up",
-    "chroma": "up",
-    "openai": "up"
-  }
-}
-```
-
-**`GET /api/dashboard` (uittreksel)**
-
-```json
-{
-  "telemetry": {
-    "total_requests": 147,
-    "error_requests": 2,
-    "error_rate": 0.014,
-    "avg_ttft_ms": 3420.5,
-    "avg_total_tokens_est": 285,
-    "total_tokens_sum": 41895,
-    "cost_usd_est": 0.012568
-  },
-  "conversations": {
-    "total_sessions": 12,
-    "total_user_messages": 87,
-    "total_messages": 174
-  },
-  "feedback": {
-    "total_feedback": 18,
-    "unique_testers": 3,
-    "avg_rating": 3.9,
-    "success_rate": 0.78
-  },
-  "validation": {
-    "required": { "testers": 3, "conversations": 20, "feedback": 20 },
-    "current": { "testers": 3, "conversations": 30, "feedback": 18 },
-    "ready": false
-  }
-}
-```
-
-**`GET /api/telemetry` (enkel item)**
-
-```json
-{
-  "endpoint": "/api/chat",
-  "ttft_ms": 2810,
-  "total_tokens_est": 245,
-  "status": "ok",
-  "error_message": null,
-  "created_at": "2026-02-18T14:22:03.412Z"
-}
-```
-
-### 4. Frontend Monitoring Pagina
-
-De frontend bevat een `/monitor` pagina die het dashboard-endpoint visualiseert. Hiermee kunnen beheerders in real-time de volgende gegevens bekijken:
-- Totaal aantal gesprekken en berichten
-- Gemiddelde responstijd en error rate
-- Feedbackscores per tester en per scenario
-- Voortgang richting validatiedoelen (testers, gesprekken, feedback)
-
-### 5. Baseline Metrics (Productie)
-
-| Metric | Waarde | Toelichting |
-|---|---|---|
-| Gem. responstijd (TTFT) | ~3-5 seconden | OpenAI `gpt-4o-mini` via API |
-| Gem. tokens per antwoord | ~150-250 | Beperkt door promptontwerp |
-| Error rate | < 2% | Voornamelijk timeouts bij cold starts |
-| Guardrail block rate | 100% | Alle 4 regex-patronen getest |
-| Gem. feedbackscore | ~3.5-4.0 / 5 | Uit initiële smoke testing |
-| Rate limit triggers | 0 | Binnen 30 req/min drempel |
-
-### 6. Evaluatieloop
-
-1. Exporteer telemetry-snapshot (dagelijks/wekelijks) via `GET /api/telemetry`.
-2. Identificeer latency-pieken en mislukte interacties.
-3. Inspecteer problematische sessies via `GET /api/history/<session_id>`.
-4. Verbeter prompts, retrieval-corpus of guardrail-patronen.
-5. Voer opnieuw smoke- en gebruikerstests uit.
-6. Monitor `avg_rating` en `success_rate` via feedback-endpoint voor klanttevredenheid.
-
-### 7. Verbeteracties Uit Baseline
-
-| # | Bevinding | Actie | Resultaat |
-|---|---|---|---|
-| 1 | Cold-start latency hoog | Prompt gecomprimeerd met ~60%, model parameters geoptimaliseerd | Latency ↓ van ~8-10s naar ~3-5s |
-| 2 | Antwoorden te lang | `max_tokens` beperkt, promptregel "1-3 zinnen max" toegevoegd | Kortere, gerichtere antwoorden |
-| 3 | Herhaalde antwoorden bij follow-up "ja" | Regel 5 toegevoegd: "never repeat a previous answer" | Follow-ups geven nu nieuwe informatie |
-| 4 | Gevent workers voor concurrency | Overgestapt naar gevent workers + SSE streaming | Betere perceived-latency |
-
----
-
-**Einde van Architectuur Verslag**
 
