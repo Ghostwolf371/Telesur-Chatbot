@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HomeMobileMenu } from "@/components/HomeMobileMenu";
 
 const quickLinks = [
   "Online opwaarderen",
@@ -126,19 +127,20 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#dfdfe3] text-[#090c24]">
       <section className="bg-telesur-blue text-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-1.5 text-xs">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-1.5 text-xs">
           <div className="flex overflow-hidden rounded-sm border border-white/25">
-            <button className="bg-telesur-yellow px-4 py-1 font-semibold text-[#0f0a5a]">
+            <button className="bg-telesur-yellow px-3 py-1 font-semibold text-[#0f0a5a] sm:px-4">
               Prive
             </button>
-            <button className="px-4 py-1 text-white/85">Zakelijk</button>
+            <button className="px-3 py-1 text-white/85 sm:px-4">Zakelijk</button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <a
               href="https://www.telesur.sr/contact/"
-              className="rounded-sm bg-telesur-yellow px-3 py-1 font-medium text-[#0f0a5a]"
+              className="rounded-sm bg-telesur-yellow px-2 py-1 font-medium text-[#0f0a5a] sm:px-3"
             >
-              Klantenservice
+              <span className="hidden sm:inline">Klantenservice</span>
+              <span className="sm:hidden">Service</span>
             </a>
             <a
               href="https://my.telesur.sr:15943/auth/realms/CERPROD_SELF/protocol/openid-connect/auth?client_id=selfserviceauth&redirect_uri=https%3A%2F%2Fmy.telesur.sr%2F&state=bc167835-a010-489f-98d6-998bdd04905e&response_mode=fragment&response_type=code&scope=openid&nonce=45c2ddeb-ddd2-47f9-8aec-66552cfe6cb1"
@@ -151,7 +153,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-telesur-blue text-white shadow-sm">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
+        <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center">
             <Image
               src="/image-1772928438572.png"
@@ -191,6 +193,8 @@ export default function HomePage() {
             <span className="px-2 text-xl">⌕</span>
             <span className="px-2 text-xl">🛒</span>
           </div>
+
+          <HomeMobileMenu menuItems={menuItems} />
         </div>
       </section>
 

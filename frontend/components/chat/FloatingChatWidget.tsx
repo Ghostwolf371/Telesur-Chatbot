@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { MessageBubble } from "./MessageBubble";
 import type { SourceItem } from "./SourceAttribution";
 
@@ -34,6 +35,7 @@ type PromptChip = {
 
 /* ── Component ── */
 export function FloatingChatWidget() {
+  const pathname = usePathname();
   const apiBaseUrl = useMemo(
     () => process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
     [],
@@ -258,6 +260,9 @@ export function FloatingChatWidget() {
     }
   };
 
+  // Hide the floating widget on the dedicated chat page
+  if (pathname === "/chat") return null;
+
   return (
     <>
       {/* ── Chat popup window ── */}
@@ -266,8 +271,8 @@ export function FloatingChatWidget() {
           className={`fixed z-50 flex flex-col overflow-hidden bg-white shadow-2xl
             ${isClosing ? "animate-chat-close" : "animate-chat-open"}
             bottom-0 left-0 right-0 rounded-t-3xl
-            sm:bottom-20 sm:left-auto sm:right-4 sm:rounded-3xl sm:w-[380px] sm:h-[560px] sm:max-h-[calc(100vh-120px)]
-            h-[calc(100vh-80px)]`}
+            sm:bottom-20 sm:left-auto sm:right-4 sm:rounded-3xl sm:w-[380px] sm:h-[560px] sm:max-h-[calc(100dvh-120px)]
+            h-[calc(100dvh-80px)]`}
         >
           {/* Header */}
           <div className="flex items-center justify-between bg-telesur-blue px-4 py-3">
@@ -445,7 +450,7 @@ export function FloatingChatWidget() {
         </div>
       )}
 
-      {/* ── Floating action button ── */}
+      {/* ── Floating action button ── hidden on mobile when chat is open (header has its own X) */}
       <button
         onClick={handleToggle}
         onMouseEnter={() => {
@@ -453,7 +458,7 @@ export function FloatingChatWidget() {
         }}
         className={`fixed bottom-4 sm:bottom-6 right-4 sm:right-5 z-50 flex h-14 w-14 sm:h-12 sm:w-12 items-center justify-center overflow-hidden shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 ${
           isOpen
-            ? "bg-telesur-blue rounded-2xl rotate-0"
+            ? "bg-telesur-blue rounded-2xl rotate-0 hidden sm:flex"
             : "bg-telesur-yellow animate-bounce-subtle rounded-[18px]"
         }`}
         type="button"

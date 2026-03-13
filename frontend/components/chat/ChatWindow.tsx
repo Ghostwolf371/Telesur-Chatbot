@@ -310,7 +310,7 @@ export function ChatWindow() {
         {/* Input bar */}
         <form
           onSubmit={onSubmit}
-          className="flex items-center gap-2 border-t border-telesur-blue/10 bg-white px-4 py-3"
+          className="flex flex-shrink-0 items-center gap-2 border-t border-telesur-blue/10 bg-white px-4 py-3"
         >
           <input
             ref={inputRef}
