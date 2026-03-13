@@ -73,7 +73,7 @@ Elke tester moet **alle** onderstaande scenario's doorlopen:
 
 ### Testinstructie voor testers
 
-> "Je test TeleBot, een klantenservice-chatbot voor Telesur. Stel voor elk scenario de vraag in je eigen woorden (kopieer niet letterlijk het voorbeeld). Beoordeel na elk antwoord de kwaliteit 1-5 en noteer eventuele problemen. Start een nieuw gesprek voor elk scenario."
+> "Je test TeleBot, een klantenservice-chatbot voor Telesur. Stel voor elk scenario de vraag in je eigen woorden (kopieer niet letterlijk het voorbeeld). **Gebruik de duim omhoog/omlaag knop (👍/👎) onder elk antwoord om directe feedback in het systeem vast te leggen.** Beoordeel de sessie daarnaast met een score (1-5) en noteer eventuele problemen in de tabel. Start een nieuw gesprek voor elk scenario."
 
 ---
 

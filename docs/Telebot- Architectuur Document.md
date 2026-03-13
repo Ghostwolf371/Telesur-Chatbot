@@ -571,7 +571,9 @@ Niet-chat endpoints worden ook gelogd via de `ApiTelemetryMiddleware` voor laten
     "error_requests": 2,
     "error_rate": 0.014,
     "avg_ttft_ms": 3420.5,
-    "avg_total_tokens_est": 285
+    "avg_total_tokens_est": 285,
+    "total_tokens_sum": 41895,
+    "cost_usd_est": 0.012568
   },
   "conversations": {
     "total_sessions": 12,
