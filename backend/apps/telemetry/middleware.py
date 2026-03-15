@@ -23,6 +23,8 @@ class ApiTelemetryMiddleware:
             "/api/chat/stream",
             "/api/telemetry",
             "/api/dashboard",
+            "/api/feedback",
+            "/api/health",
         }:
             status_text = "ok" if response.status_code < 400 else "error"
             elapsed_ms = int((time.perf_counter() - started) * 1000)
